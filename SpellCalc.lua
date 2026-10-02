@@ -70,13 +70,17 @@ function SpellCalc:ScanTalents()
             if tName and rank and rank > 0 then
                 for _, tDef in ipairs(talentDefs) do
                     if tName == tDef.name then
-                        self.talentCache[tDef.name] = {
+                        -- [patch] "key" erlaubt mehrere Eintraege pro Talent
+                        -- (z.B. Force of Will: Schaden UND Schild)
+                        self.talentCache[tDef.key or tDef.name] = {
                             rank = rank,
                             perRank = tDef.perRank,
+                            values = tDef.values,
                             maxRank = tDef.maxRank,
                             affectType = tDef.affectType,
                             affectSchool = tDef.affectSchool,
                             affectSpells = tDef.affectSpells,
+                            part = tDef.part,
                         }
                     end
                 end
@@ -85,27 +89,42 @@ function SpellCalc:ScanTalents()
     end
 end
 
-function SpellCalc:GetTalentMultiplier(spellName, school, isDamage)
-    local mult = 1.0
-    local affType = isDamage and "damage" or "healing"
+-- [patch] Bonus eines Talents auf seinem aktuellen Rang. "values" fuer
+-- Talente, die nicht linear steigen (z.B. Improved Cone of Cold 15/25/35%).
+function SpellCalc:TalentBonus(tData)
+    if tData.values then
+        return tData.values[tData.rank] or tData.values[table.getn(tData.values)] or 0
+    end
+    return (tData.perRank or 0) * tData.rank
+end
 
-    for tName, tData in pairs(self.talentCache) do
-        local applies = false
-        if tData.affectType == affType or tData.affectType == "both" then
-            if tData.affectSpells then
-                for _, sName in ipairs(tData.affectSpells) do
-                    if sName == spellName then applies = true; break end
-                end
-            elseif tData.affectSchool == "all" then
-                applies = true
-            elseif type(tData.affectSchool) == "table" then
-                for _, s in ipairs(tData.affectSchool) do
-                    if s == school then applies = true; break end
-                end
-            end
+-- [patch] part: "direct" oder "dot". Talente mit part wirken nur auf
+-- diesen Teil (z.B. Genesis nur auf periodische Effekte), ohne part auf beide.
+-- part == nil heisst "irgendein Teil" (fuer Tooltip/Anzeige).
+function SpellCalc:TalentApplies(tData, spellName, school, isDamage, part)
+    local affType = isDamage and "damage" or "healing"
+    if tData.affectType ~= affType and tData.affectType ~= "both" then return false end
+    if part and tData.part and tData.part ~= part then return false end
+    if tData.affectSpells then
+        for _, sName in ipairs(tData.affectSpells) do
+            if sName == spellName then return true end
         end
-        if applies then
-            mult = mult + (tData.perRank * tData.rank)
+        return false
+    elseif tData.affectSchool == "all" then
+        return true
+    elseif type(tData.affectSchool) == "table" then
+        for _, s in ipairs(tData.affectSchool) do
+            if s == school then return true end
+        end
+    end
+    return false
+end
+
+function SpellCalc:GetTalentMultiplier(spellName, school, isDamage, part)
+    local mult = 1.0
+    for tName, tData in pairs(self.talentCache) do
+        if self:TalentApplies(tData, spellName, school, isDamage, part or "direct") then
+            mult = mult + self:TalentBonus(tData)
         end
     end
     return mult
@@ -211,7 +230,14 @@ function SpellCalc:CalcSpell(spellData)
     result.isHeal = isHealType
 
     local sp = isHealType and self:GetHealingPower() or self:GetSpellPower(spellData.school)
-    local talentMult = self:GetTalentMultiplier(spellData.name, spellData.school, not isHealType)
+    -- [patch] Direkt- und periodischer Teil getrennt, weil manche Talente
+    -- nur einen davon verstaerken. Kanalisierte Zauber wirken periodisch.
+    local directMult = self:GetTalentMultiplier(spellData.name, spellData.school, not isHealType, "direct")
+    local dotMult = self:GetTalentMultiplier(spellData.name, spellData.school, not isHealType, "dot")
+    local talentMult = directMult
+    if sType == "dot" or sType == "hot" or sType == "ch_dmg" or sType == "ch_heal" then
+        talentMult = dotMult
+    end
 
     -- Effective time for per-second calculation:
     -- Use the LONGEST of: cast time, GCD (1.5s), or cooldown
@@ -247,8 +273,8 @@ function SpellCalc:CalcSpell(spellData)
         local dotCoeffVal = spellData.dotCoeff or 0
 
         local directAvg = ((spellData.minDmg or 0) + (spellData.maxDmg or 0)) / 2
-        local directTotal = (directAvg + sp * directCoeff) * talentMult
-        local dotTotal = ((spellData.dotTotal or 0) + sp * dotCoeffVal) * talentMult
+        local directTotal = (directAvg + sp * directCoeff) * directMult
+        local dotTotal = ((spellData.dotTotal or 0) + sp * dotCoeffVal) * dotMult
         local grandTotal = directTotal + dotTotal
 
         result.avgValue = Round(grandTotal, 1)
@@ -718,7 +744,7 @@ end
 function SpellCalc:UpdateFooter()
     local parts = {}
     for tName, tData in pairs(self.talentCache) do
-        local pct = Round(tData.perRank * tData.rank * 100, 0)
+        local pct = Round(self:TalentBonus(tData) * 100, 1)
         table.insert(parts, tName .. ": +" .. pct .. "%")
     end
     if table.getn(parts) > 0 then
@@ -799,23 +825,14 @@ function SpellCalc:ShowTooltip(row)
     -- Talent bonuses
     local bonuses = {}
     for tName, tData in pairs(self.talentCache) do
-        local applies = false
-        local affType = d.isHeal and "healing" or "damage"
-        if tData.affectType == affType or tData.affectType == "both" then
-            if tData.affectSpells then
-                for _, sName in ipairs(tData.affectSpells) do
-                    if sName == d.name then applies = true; break end
-                end
-            elseif tData.affectSchool == "all" then
-                applies = true
-            elseif type(tData.affectSchool) == "table" then
-                for _, s in ipairs(tData.affectSchool) do
-                    if s == d.school then applies = true; break end
-                end
+        if self:TalentApplies(tData, d.name, d.school, not d.isHeal, nil) then
+            local txt = tName .. " +" .. Round(self:TalentBonus(tData) * 100, 1) .. "%"
+            if tData.part == "dot" then
+                txt = txt .. (d.isHeal and " (HoT)" or " (DoT)")
+            elseif tData.part == "direct" then
+                txt = txt .. " (direct)"
             end
-        end
-        if applies then
-            table.insert(bonuses, tName .. " +" .. Round(tData.perRank * tData.rank * 100, 0) .. "%")
+            table.insert(bonuses, txt)
         end
     end
     if table.getn(bonuses) > 0 then

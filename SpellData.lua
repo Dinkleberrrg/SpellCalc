@@ -558,39 +558,60 @@ SPELLCALC_SPELLS["PALADIN"] = {
 
 SPELLCALC_TALENTS = {}
 
+-- [patch] Talentwerte gegen die Client-Daten von OctoWoW geprueft
+-- (Talent.dbc/Spell.dbc aus patch-4.mpq bzw. patch-O.mpq, 2026-10-02).
+-- Die Talentbaeume weichen teils stark von Classic 1.12 ab.
+--   perRank   linearer Bonus pro Rang
+--   values    Bonus je Rang, wenn nicht linear
+--   part      "direct" oder "dot": wirkt nur auf diesen Teil des Zaubers
+--   key       eigener Name, wenn ein Talent mehrere Eintraege braucht
+-- Talente, die nur Krit, Zauberzeit, Kosten oder Cooldown aendern, werden
+-- (noch) nicht beruecksichtigt.
+
 SPELLCALC_TALENTS["MAGE"] = {
     { name="Fire Power",         perRank=0.02, maxRank=5, affectType="damage", affectSchool={3} },
-    { name="Piercing Ice",       perRank=0.02, maxRank=5, affectType="damage", affectSchool={5} },
-    { name="Arcane Instability", perRank=0.01, maxRank=3, affectType="damage", affectSchool="all" },
+    { name="Piercing Ice",       perRank=0.02, maxRank=3, affectType="damage", affectSchool={5} },
+    { name="Improved Cone of Cold", values={0.15, 0.25, 0.35}, maxRank=3, affectType="damage", affectSpells={"Cone of Cold"} },
+    -- Proc: 8/16/25% Chance auf +25% Schaden -> Erwartungswert, nur Arkan
+    { name="Arcane Instability", values={0.02, 0.04, 0.0625}, maxRank=3, affectType="damage", affectSchool={7} },
 }
 
 SPELLCALC_TALENTS["PRIEST"] = {
     { name="Darkness",           perRank=0.02, maxRank=5, affectType="damage", affectSchool={6} },
     { name="Shadowform",         perRank=0.15, maxRank=1, affectType="damage", affectSchool={6} },
-    { name="Force of Will",      perRank=0.01, maxRank=5, affectType="damage", affectSchool="all" },
-    { name="Searing Light",      perRank=0.05, maxRank=2, affectType="damage", affectSpells={"Smite","Holy Fire"} },
-    { name="Spiritual Healing",  perRank=0.02, maxRank=5, affectType="healing", affectSchool="all" },
+    -- Schaden nur Smite, Holy Fire, Mind Blast (plus Holy Nova/Chastise, nicht in der Liste)
+    { name="Force of Will",      perRank=0.01, maxRank=5, affectType="damage", affectSpells={"Smite","Holy Fire","Mind Blast"} },
+    { name="Force of Will", key="Force of Will (Shield)", perRank=0.04, maxRank=5, affectType="healing", affectSpells={"Power Word: Shield"} },
+    { name="Spiritual Healing",  perRank=0.06, maxRank=5, affectType="healing",
+      affectSpells={"Lesser Heal","Heal","Greater Heal","Flash Heal","Renew","Prayer of Healing"} },
     { name="Improved Renew",     perRank=0.05, maxRank=3, affectType="healing", affectSpells={"Renew"} },
-    -- [patch] Verbesserte Machtwort: Schild - +5% Absorb pro Rang
     { name="Improved Power Word: Shield", perRank=0.05, maxRank=3, affectType="healing", affectSpells={"Power Word: Shield"} },
 }
 
 SPELLCALC_TALENTS["WARLOCK"] = {
     { name="Shadow Mastery",     perRank=0.02, maxRank=5, affectType="damage", affectSchool={6} },
     { name="Emberstorm",         perRank=0.02, maxRank=5, affectType="damage", affectSchool={3} },
+    { name="Improved Immolate",  perRank=0.04, maxRank=5, affectType="damage", affectSpells={"Immolate"} },
+    { name="Aftermath",          perRank=0.02, maxRank=3, affectType="damage", affectSpells={"Immolate"}, part="dot" },
+    { name="Improved Curse of Agony", values={0.03, 0.06, 0.10}, maxRank=3, affectType="damage", affectSpells={"Curse of Agony"} },
+    { name="Improved Drains",    perRank=0.05, maxRank=2, affectType="damage", affectSpells={"Drain Life"} },
 }
 
 SPELLCALC_TALENTS["DRUID"] = {
-    { name="Moonfury",           perRank=0.02, maxRank=5, affectType="damage", affectSpells={"Wrath","Starfire","Moonfire"} },
+    { name="Moonfury",           perRank=0.04, maxRank=3, affectType="damage",
+      affectSpells={"Wrath","Starfire","Moonfire","Insect Swarm","Hurricane"} },
+    { name="Improved Moonfire",  perRank=0.05, maxRank=2, affectType="damage", affectSpells={"Moonfire"} },
+    { name="Genesis",            perRank=0.05, maxRank=3, affectType="both", part="dot",
+      affectSpells={"Moonfire","Insect Swarm","Hurricane","Rejuvenation","Regrowth","Tranquility"} },
     { name="Gift of Nature",     perRank=0.02, maxRank=5, affectType="healing", affectSchool="all" },
-    { name="Improved Rejuvenation", perRank=0.05, maxRank=3, affectType="healing", affectSpells={"Rejuvenation"} },
+    { name="Improved Tranquility", perRank=0.20, maxRank=2, affectType="healing", affectSpells={"Tranquility"} },
 }
 
 SPELLCALC_TALENTS["SHAMAN"] = {
     { name="Concussion",         perRank=0.01, maxRank=5, affectType="damage",
       affectSpells={"Lightning Bolt","Chain Lightning","Earth Shock","Flame Shock","Frost Shock"} },
     { name="Call of Flame",      perRank=0.05, maxRank=3, affectType="damage", affectSpells={"Flame Shock"} },
-    { name="Purification",       perRank=0.02, maxRank=5, affectType="healing", affectSchool="all" },
+    { name="Elemental Fury",     perRank=0.05, maxRank=2, affectType="damage", affectSchool={3,4,5} },
 }
 
 SPELLCALC_TALENTS["PALADIN"] = {
