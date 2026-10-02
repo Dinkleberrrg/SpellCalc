@@ -48,7 +48,7 @@ SPELLS = {
   ('Blast Wave', 'damage', 0.136, 0, {}),
   ('Cone of Cold', 'damage', 0.129, 0, {}),
   ('Frost Nova', 'damage', 0.032, 0, {}),
-  ('Arcane Missiles', 'ch_dmg', 0, 1.0, {}),
+  ('Arcane Missiles', 'ch_dmg', 0, 1.0, {'crit': True}),
   ('Arcane Explosion', 'damage', 0.143, 0, {}),
   ('Arcane Rupture', 'damage', 0.714, 0, {'est': True}),
   ('Arcane Surge', 'damage', 0.429, 0, {'est': True}),
@@ -73,7 +73,7 @@ SPELLS = {
   ('Prayer of Healing', 'heal', 0.286, 0, {}),
   ('Holy Nova', 'heal', 0.161, 0, {'want': 'heal', 'label': 'Holy Nova (Heal)'}),
   ('Desperate Prayer', 'heal', 0.429, 0, {}),
-  ('Power Word: Shield', 'heal', 0.1, 0, {'noscale': True}),
+  ('Power Word: Shield', 'heal', 0.1, 0, {'noscale': True, 'nocrit': True}),
  ],
  'WARLOCK': [
   ('Shadow Bolt', 'damage', 0.857, 0, {}),
@@ -211,6 +211,8 @@ def gen():
                     f.append('manaPct=%d' % o['manapct'])
                 f += ['cd=%g' % o['cd'], 'level=%d' % o['lvl']]
                 if isAoE: f.append('isAoE=true')
+                if flags.get('crit'): f.append('canCrit=true')
+                if flags.get('nocrit'): f.append('noCrit=true')
                 f.append('id=%d' % o['id'])
                 lines.append('    S{' + ','.join(f) + '},')
             lines.append('')

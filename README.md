@@ -11,7 +11,9 @@ Shows every rank of every spell with cooldown-aware efficiency metrics.
 - **Per Second output** (DPS / HPS) — **cooldowns are factored in**
   - Fire Blast with 8s CD shows true DPS = damage/8, not damage/1.5
   - Instants on cooldown use CD as effective cycle time
-- **Automatic talent scanning** — known damage/heal modifiers applied
+- **Automatic talent scanning** — damage/heal %, cast time, cooldown, DoT duration, mana cost, crit chance and crit bonus talents
+- **Crits included** — average values include spell crit (from BetterCharacterStats) and crit talents; DoT/HoT ticks don't crit
+- **Form/buff talents** (Shadowform) only count while the buff is active
 - **Spell Power & Healing Power** auto-detected from character stats
 - **Sortable** by any column (click header)
 - **Filterable**: All / Damage / Healing
@@ -35,6 +37,7 @@ Mage, Priest, Warlock, Druid, Shaman, Paladin — all caster spells, all ranks.
 | `/spellcalc`  | Toggle window (long form)          |
 | `/sc sp 300`  | Manually set Spell Power to 300    |
 | `/sc hp 400`  | Manually set Healing Power to 400  |
+| `/sc crit 15` | Manually set spell crit to 15 %    |
 | `/sc reset`   | Clear manual overrides (auto mode) |
 | `/sc help`    | Show help in chat                  |
 

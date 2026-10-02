@@ -69,7 +69,9 @@ function SpellCalc:ScanTalents()
             local tName, _, _, _, rank = GetTalentInfo(tab, i)
             if tName and rank and rank > 0 then
                 for _, tDef in ipairs(talentDefs) do
-                    if tName == tDef.name then
+                    -- [patch] buff: Talent wirkt nur mit aktivem Buff/Form
+                    -- (z.B. Shadowform), erkannt am Symbol des Buffs
+                    if tName == tDef.name and (not tDef.buff or self:HasBuff(tDef.buff)) then
                         -- [patch] "key" erlaubt mehrere Eintraege pro Talent
                         -- (z.B. Force of Will: Schaden UND Schild)
                         self.talentCache[tDef.key or tDef.name] = {
@@ -81,12 +83,25 @@ function SpellCalc:ScanTalents()
                             affectSchool = tDef.affectSchool,
                             affectSpells = tDef.affectSpells,
                             part = tDef.part,
+                            mod = tDef.mod,
                         }
                     end
                 end
             end
         end
     end
+end
+
+-- [patch] Sucht einen Spieler-Buff anhand eines Teils seines Symbolnamens.
+-- 1.12 liefert bei UnitBuff nur das Symbol, keinen Namen.
+function SpellCalc:HasBuff(iconPart)
+    local needle = string.lower(iconPart)
+    for i = 1, 32 do
+        local tex = UnitBuff("player", i)
+        if not tex then break end
+        if string.find(string.lower(tex), needle, 1, true) then return true end
+    end
+    return false
 end
 
 -- [patch] Bonus eines Talents auf seinem aktuellen Rang. "values" fuer
@@ -101,9 +116,10 @@ end
 -- [patch] part: "direct" oder "dot". Talente mit part wirken nur auf
 -- diesen Teil (z.B. Genesis nur auf periodische Effekte), ohne part auf beide.
 -- part == nil heisst "irgendein Teil" (fuer Tooltip/Anzeige).
+-- Fehlt affectType, wirkt das Talent auf Schadens- und Heilzauber.
 function SpellCalc:TalentApplies(tData, spellName, school, isDamage, part)
     local affType = isDamage and "damage" or "healing"
-    if tData.affectType ~= affType and tData.affectType ~= "both" then return false end
+    if tData.affectType and tData.affectType ~= affType and tData.affectType ~= "both" then return false end
     if part and tData.part and tData.part ~= part then return false end
     if tData.affectSpells then
         for _, sName in ipairs(tData.affectSpells) do
@@ -120,14 +136,32 @@ function SpellCalc:TalentApplies(tData, spellName, school, isDamage, part)
     return false
 end
 
+-- Schadens-/Heilungsmultiplikator (nur Talente ohne "mod")
 function SpellCalc:GetTalentMultiplier(spellName, school, isDamage, part)
     local mult = 1.0
     for tName, tData in pairs(self.talentCache) do
-        if self:TalentApplies(tData, spellName, school, isDamage, part or "direct") then
+        if not tData.mod and self:TalentApplies(tData, spellName, school, isDamage, part or "direct") then
             mult = mult + self:TalentBonus(tData)
         end
     end
     return mult
+end
+
+-- [patch] Summe aller Talente einer Art ("mod"):
+--   cast       Zauberzeit in Sekunden (negativ = schneller)
+--   cd         Cooldown in Sekunden
+--   duration   Dauer von DoT/HoT in Sekunden (mehr Ticks)
+--   cost       Manakosten als Anteil (-0.05 = 5% billiger)
+--   crit       zusaetzliche Krit-Chance als Anteil (0.02 = 2%)
+--   critbonus  zusaetzlicher Krit-Bonus als Anteil (1.0 = Krit x2 statt x1.5)
+function SpellCalc:GetTalentMod(mod, spellName, school, isDamage)
+    local total = 0
+    for tName, tData in pairs(self.talentCache) do
+        if tData.mod == mod and self:TalentApplies(tData, spellName, school, isDamage, nil) then
+            total = total + self:TalentBonus(tData)
+        end
+    end
+    return total
 end
 
 -- ============================================================================
@@ -207,6 +241,17 @@ function SpellCalc:GetHealingPower()
     return 0
 end
 
+-- [patch] Allgemeine Zauber-Krit-Chance in Prozent (Grundwert, Intelligenz,
+-- Ausruestung, Buffs) von BetterCharacterStats. Zauberbezogene Talente
+-- rechnet SpellCalc selbst dazu.
+function SpellCalc:GetSpellCrit()
+    if self.critManual then return self.critManual end
+    if self:BCSReady() and BCS.GetSpellCritChance then
+        return BCS:GetSpellCritChance() or 0
+    end
+    return 0
+end
+
 -- [patch] Grundmana = Maximalmana ohne den Anteil aus Intelligenz
 -- (die ersten 20 Int geben je 1 Mana, jeder weitere Punkt 15).
 function SpellCalc:GetBaseMana()
@@ -228,13 +273,6 @@ function SpellCalc:CalcSpell(spellData)
     result.rank = spellData.rank
     result.school = spellData.school
     result.spellType = spellData.spellType
-    result.manaCost = spellData.manaCost or 0
-    -- [patch] Manche Zauber kosten Prozent des Grundmanas (z.B. Chastise)
-    if result.manaCost == 0 and spellData.manaPct then
-        result.manaCost = math.floor(self:GetBaseMana() * spellData.manaPct / 100 + 0.5)
-    end
-    result.castTime = spellData.castTime
-    result.cd = spellData.cd or 0
     result.isAoE = spellData.isAoE
     result.level = spellData.level or 60
     result.isHeal = false
@@ -243,27 +281,73 @@ function SpellCalc:CalcSpell(spellData)
     local sType = spellData.spellType
     local isHealType = (sType == "heal" or sType == "hot" or sType == "dd+hot" or sType == "ch_heal")
     result.isHeal = isHealType
+    local name, school, isDamage = spellData.name, spellData.school, not isHealType
+    local isChannel = (sType == "ch_dmg" or sType == "ch_heal")
 
-    local sp = isHealType and self:GetHealingPower() or self:GetSpellPower(spellData.school)
+    -- [patch] Talente auf Zauberzeit, Cooldown, Dauer und Kosten
+    result.castTime = spellData.castTime or 0
+    if not isChannel then
+        result.castTime = math.max(0, result.castTime + self:GetTalentMod("cast", name, school, isDamage))
+    end
+    result.cd = math.max(0, (spellData.cd or 0) + self:GetTalentMod("cd", name, school, isDamage))
+
+    local cost = spellData.manaCost or 0
+    -- [patch] Manche Zauber kosten Prozent des Grundmanas (z.B. Chastise)
+    if cost == 0 and spellData.manaPct then
+        cost = self:GetBaseMana() * spellData.manaPct / 100
+    end
+    local costMod = self:GetTalentMod("cost", name, school, isDamage)
+    result.manaCost = math.max(0, math.floor(cost * (1 + costMod) + 0.5))
+
+    -- Laengere DoTs/HoTs: mehr Ticks, also mehr Grundwert und mehr Skalierung
+    local dotDuration = spellData.dotDuration
+    local dotTotalBase = spellData.dotTotal or 0
+    local dotCoeffVal = spellData.dotCoeff or 0
+    if dotDuration and dotDuration > 0 then
+        local extra = self:GetTalentMod("duration", name, school, isDamage)
+        if extra ~= 0 then
+            local f = (dotDuration + extra) / dotDuration
+            dotTotalBase = dotTotalBase * f
+            dotCoeffVal = dotCoeffVal * f
+            dotDuration = dotDuration + extra
+        end
+    end
+
+    local sp = isHealType and self:GetHealingPower() or self:GetSpellPower(school)
     -- [patch] Direkt- und periodischer Teil getrennt, weil manche Talente
     -- nur einen davon verstaerken. Kanalisierte Zauber wirken periodisch.
-    local directMult = self:GetTalentMultiplier(spellData.name, spellData.school, not isHealType, "direct")
-    local dotMult = self:GetTalentMultiplier(spellData.name, spellData.school, not isHealType, "dot")
+    local directMult = self:GetTalentMultiplier(name, school, isDamage, "direct")
+    local dotMult = self:GetTalentMultiplier(name, school, isDamage, "dot")
     local talentMult = directMult
-    if sType == "dot" or sType == "hot" or sType == "ch_dmg" or sType == "ch_heal" then
+    if sType == "dot" or sType == "hot" or isChannel then
         talentMult = dotMult
     end
+
+    -- [patch] Krit: nur der direkte Teil kann kritisch treffen, DoT/HoT-Ticks
+    -- nicht. Kanalisierte Zauber nur, wenn sie Einzeltreffer ausloesen
+    -- (canCrit, z.B. Arcane Missiles). Absorbs (noCrit) nie.
+    local canCrit = (not spellData.noCrit) and (spellData.canCrit or not (sType == "dot" or sType == "hot" or isChannel))
+    local critMult = 1
+    if canCrit then
+        local chance = (self:GetSpellCrit() / 100) + self:GetTalentMod("crit", name, school, isDamage)
+        chance = math.max(0, math.min(chance, 1))
+        local bonus = 0.5 * (1 + self:GetTalentMod("critbonus", name, school, isDamage))
+        critMult = 1 + chance * bonus
+        result.critChance = chance
+        result.critDamage = 1 + bonus
+    end
+    result.canCrit = canCrit and true or false
 
     -- Effective time for per-second calculation:
     -- Use the LONGEST of: cast time, GCD (1.5s), or cooldown
     local gcd = 1.5
-    local effectiveCast = math.max(spellData.castTime, gcd)
+    local effectiveCast = math.max(result.castTime, gcd)
     local effectiveTime = math.max(effectiveCast, result.cd)
 
     if sType == "damage" or sType == "heal" then
         local coeff = isHealType and (spellData.hpCoeff or 0) or (spellData.spCoeff or 0)
         local baseAvg = ((spellData.minDmg or 0) + (spellData.maxDmg or 0)) / 2
-        local total = (baseAvg + sp * coeff) * talentMult
+        local total = (baseAvg + sp * coeff) * talentMult * critMult
 
         result.avgValue = Round(total, 1)
         result.perMana = Round(total / math.max(result.manaCost, 1), 2)
@@ -271,25 +355,22 @@ function SpellCalc:CalcSpell(spellData)
 
     elseif sType == "dot" or sType == "hot" then
         result.isDot = true
-        local coeff = spellData.dotCoeff or 0
-        local baseTotal = spellData.dotTotal or 0
-        local total = (baseTotal + sp * coeff) * talentMult
+        local total = (dotTotalBase + sp * dotCoeffVal) * talentMult
 
         result.avgValue = Round(total, 1)
         result.perMana = Round(total / math.max(result.manaCost, 1), 2)
         -- For DoTs: effective time is the longer of dot duration or cooldown
-        local dotEffective = math.max(spellData.dotDuration or 1, result.cd)
+        local dotEffective = math.max(dotDuration or 1, result.cd)
         result.perSecond = Round(total / dotEffective, 1)
-        result.dotDuration = spellData.dotDuration
+        result.dotDuration = dotDuration
 
     elseif sType == "dd+dot" or sType == "dd+hot" then
         result.isDot = true
         local directCoeff = isHealType and (spellData.hpCoeff or 0) or (spellData.spCoeff or 0)
-        local dotCoeffVal = spellData.dotCoeff or 0
 
         local directAvg = ((spellData.minDmg or 0) + (spellData.maxDmg or 0)) / 2
-        local directTotal = (directAvg + sp * directCoeff) * directMult
-        local dotTotal = ((spellData.dotTotal or 0) + sp * dotCoeffVal) * dotMult
+        local directTotal = (directAvg + sp * directCoeff) * directMult * critMult
+        local dotTotal = (dotTotalBase + sp * dotCoeffVal) * dotMult
         local grandTotal = directTotal + dotTotal
 
         result.avgValue = Round(grandTotal, 1)
@@ -297,19 +378,19 @@ function SpellCalc:CalcSpell(spellData)
         result.dotPart = Round(dotTotal, 1)
         result.perMana = Round(grandTotal / math.max(result.manaCost, 1), 2)
         -- Time = cast + dot duration, but at least cooldown
-        local totalTime = math.max(effectiveCast + (spellData.dotDuration or 0), result.cd)
+        local totalTime = math.max(effectiveCast + (dotDuration or 0), result.cd)
         result.perSecond = Round(grandTotal / totalTime, 1)
-        result.dotDuration = spellData.dotDuration
+        result.dotDuration = dotDuration
 
-    elseif sType == "ch_dmg" or sType == "ch_heal" then
+    elseif isChannel then
         local coeff = isHealType and (spellData.hpCoeff or 0) or (spellData.spCoeff or 0)
         local baseAvg = ((spellData.minDmg or 0) + (spellData.maxDmg or 0)) / 2
-        local total = (baseAvg + sp * coeff) * talentMult
+        local total = (baseAvg + sp * coeff) * talentMult * critMult
 
         result.avgValue = Round(total, 1)
         result.perMana = Round(total / math.max(result.manaCost, 1), 2)
         -- Channel time is the cast, but cooldown might be longer
-        local chanTime = math.max(spellData.castTime, result.cd)
+        local chanTime = math.max(result.castTime, result.cd)
         result.perSecond = Round(total / chanTime, 1)
     end
 
@@ -317,11 +398,10 @@ function SpellCalc:CalcSpell(spellData)
     -- Bei Kombinationen aus Direktschaden und DoT zaehlt beides zusammen,
     -- weil beide Teile aus derselben Wirkung stammen.
     local directCoeff = isHealType and (spellData.hpCoeff or 0) or (spellData.spCoeff or 0)
-    local periodCoeff = spellData.dotCoeff or 0
     if sType == "dot" or sType == "hot" then
-        result.coeffDirect, result.coeffDot = 0, periodCoeff
+        result.coeffDirect, result.coeffDot = 0, dotCoeffVal
     elseif sType == "dd+dot" or sType == "dd+hot" then
-        result.coeffDirect, result.coeffDot = directCoeff, periodCoeff
+        result.coeffDirect, result.coeffDot = directCoeff, dotCoeffVal
     else
         result.coeffDirect, result.coeffDot = directCoeff, 0
     end
@@ -684,8 +764,8 @@ function SpellCalc:UpdateList()
     end
 
     self.infoText:SetText(string.format(
-        "|cFF00FF00%s|r  |  SP: %s  |  HP: |cFF00FF88%d|r  |  Talents: |cFFFFFF00%d|r  |  Spells: |cFFAAAAFF%d|r",
-        localizedClass or GetPlayerClass(), spText, self:GetHealingPower(),
+        "|cFF00FF00%s|r  |  SP: %s  |  HP: |cFF00FF88%d|r  |  Crit: |cFFFFFF00%.1f%%|r  |  Talents: |cFFFFFF00%d|r  |  Spells: |cFFAAAAFF%d|r",
+        localizedClass or GetPlayerClass(), spText, self:GetHealingPower(), self:GetSpellCrit(),
         self:CountActiveTalents(), numItems
     ))
 
@@ -758,14 +838,31 @@ function SpellCalc:CountActiveTalents()
     return count
 end
 
+-- [patch] Talentwert lesbar je nach Art
+function SpellCalc:TalentLabel(tName, tData)
+    local v = self:TalentBonus(tData)
+    local m = tData.mod
+    if m == "cast" or m == "cd" or m == "duration" then
+        local what = (m == "cast" and " cast") or (m == "cd" and " CD") or " duration"
+        return tName .. " " .. string.format("%+.1fs", v) .. what
+    elseif m == "cost" then
+        return tName .. " " .. Round(v * 100, 1) .. "% mana"
+    elseif m == "crit" then
+        return tName .. " +" .. Round(v * 100, 1) .. "% crit"
+    elseif m == "critbonus" then
+        return tName .. " +" .. Round(v * 100, 0) .. "% crit bonus"
+    end
+    return tName .. " +" .. Round(v * 100, 1) .. "%"
+end
+
 function SpellCalc:UpdateFooter()
     local parts = {}
     for tName, tData in pairs(self.talentCache) do
-        local pct = Round(self:TalentBonus(tData) * 100, 1)
-        table.insert(parts, tName .. ": +" .. pct .. "%")
+        table.insert(parts, tName)
     end
+    table.sort(parts)
     if table.getn(parts) > 0 then
-        self.footerText:SetText("|cFFAAAAFFTalents: " .. table.concat(parts, ", ") .. "|r")
+        self.footerText:SetText("|cFFAAAAFFTalents: " .. table.concat(parts, ", ") .. "  (Details im Tooltip)|r")
     else
         self.footerText:SetText("|cFF888888No relevant talents detected|r")
     end
@@ -835,6 +932,13 @@ function SpellCalc:ShowTooltip(row)
     local dpsLabel = d.isHeal and "HPS" or "DPS"
     GameTooltip:AddDoubleLine(dpsLabel .. " (per second):", string.format("%.1f", d.perSecond or 0), 1, 0.87, 0.3, 1, 1, 1)
 
+    -- [patch] Krit
+    if d.canCrit and d.critChance then
+        GameTooltip:AddDoubleLine("Crit chance:", string.format("%.1f%% (x%.2f)", d.critChance * 100, d.critDamage or 1.5),
+            0.8, 0.8, 0.8, 1, 1, 1)
+        GameTooltip:AddLine("Avg includes crits" .. (d.directPart and " (direct part only)" or ""), 0.5, 0.5, 0.5)
+    end
+
     if d.isAoE then
         GameTooltip:AddLine("|cFFFF8800AoE spell - values per target|r")
     end
@@ -843,7 +947,7 @@ function SpellCalc:ShowTooltip(row)
     local bonuses = {}
     for tName, tData in pairs(self.talentCache) do
         if self:TalentApplies(tData, d.name, d.school, not d.isHeal, nil) then
-            local txt = tName .. " +" .. Round(self:TalentBonus(tData) * 100, 1) .. "%"
+            local txt = self:TalentLabel(tName, tData)
             if tData.part == "dot" then
                 txt = txt .. (d.isHeal and " (HoT)" or " (DoT)")
             elseif tData.part == "direct" then
@@ -854,7 +958,10 @@ function SpellCalc:ShowTooltip(row)
     end
     if table.getn(bonuses) > 0 then
         GameTooltip:AddLine(" ")
-        GameTooltip:AddLine("|cFF88AAFFTalent bonuses: " .. table.concat(bonuses, ", ") .. "|r")
+        GameTooltip:AddLine("|cFF88AAFFTalents:|r")
+        for _, txt in ipairs(bonuses) do
+            GameTooltip:AddLine("  " .. txt, 0.53, 0.67, 1)
+        end
     end
 
     GameTooltip:Show()
@@ -944,9 +1051,18 @@ initFrame:SetScript("OnEvent", function()
                 SpellCalc:SetManualSP(tonumber(val))
             elseif cmd == "hp" then
                 SpellCalc:SetManualHP(tonumber(val))
+            elseif cmd == "crit" then
+                -- [patch] Krit-Chance von Hand setzen (Prozent), 0 = automatisch
+                local v = tonumber(val)
+                SpellCalc.critManual = (v and v > 0) and v or nil
+                SpellCalc.cachedData = nil
+                DEFAULT_CHAT_FRAME:AddMessage("|cFF00FF00SpellCalc:|r Crit "
+                    .. (SpellCalc.critManual and (SpellCalc.critManual .. "%") or "auto"))
+                if SpellCalc.frame and SpellCalc.frame:IsShown() then SpellCalc:UpdateList() end
             elseif cmd == "reset" then
                 SpellCalc.spManual = nil
                 SpellCalc.hpManual = nil
+                SpellCalc.critManual = nil
                 SpellCalc.cachedData = nil
                 DEFAULT_CHAT_FRAME:AddMessage("|cFF00FF00SpellCalc:|r Manual values cleared.")
                 if SpellCalc.frame and SpellCalc.frame:IsShown() then SpellCalc:UpdateList() end
@@ -955,6 +1071,7 @@ initFrame:SetScript("OnEvent", function()
                 DEFAULT_CHAT_FRAME:AddMessage("  /sc - Toggle window")
                 DEFAULT_CHAT_FRAME:AddMessage("  /sc sp 300 - Set spell power manually")
                 DEFAULT_CHAT_FRAME:AddMessage("  /sc hp 400 - Set healing power manually")
+                DEFAULT_CHAT_FRAME:AddMessage("  /sc crit 15 - Set spell crit % manually")
                 DEFAULT_CHAT_FRAME:AddMessage("  /sc reset - Clear manual overrides")
                 DEFAULT_CHAT_FRAME:AddMessage("  /sc learned - Toggle \"Learned only\"")
                 DEFAULT_CHAT_FRAME:AddMessage("  /sc help - Show this help")

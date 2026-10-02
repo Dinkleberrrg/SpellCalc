@@ -14,6 +14,8 @@
 -- Zauber oder geaenderte Dauer, ohne bekannten Referenzwert.
 -- manaPct = Kosten in Prozent des Grundmanas (statt manaCost).
 -- Kanalisierte Zauber: minDmg/maxDmg = Gesamtwert, castTime = Kanaldauer.
+-- canCrit = kanalisierter Zauber mit kritfaehigen Einzeltreffern,
+-- noCrit = kann nie kritisch wirken (Absorb).
 
 SPELLCALC_SCHOOLS = {
     [2] = { name = "Holy",   color = {1.0, 0.9, 0.0} },
@@ -117,14 +119,14 @@ SPELLCALC_SPELLS["MAGE"] = {
     S{name="Frost Nova",rank=4,school=5,spellType="damage",minDmg=71,maxDmg=79,manaCost=145,castTime=0,spCoeff=0.032,cd=25,level=54,isAoE=true,id=10230},
 
     -- ARCANE MISSILES
-    S{name="Arcane Missiles",rank=1,school=7,spellType="ch_dmg",minDmg=72,maxDmg=72,manaCost=85,castTime=3,spCoeff=0.33,cd=0,level=8,id=5143},
-    S{name="Arcane Missiles",rank=2,school=7,spellType="ch_dmg",minDmg=144,maxDmg=144,manaCost=140,castTime=4,spCoeff=0.68,cd=0,level=16,id=5144},
-    S{name="Arcane Missiles",rank=3,school=7,spellType="ch_dmg",minDmg=280,maxDmg=280,manaCost=235,castTime=5,spCoeff=1,cd=0,level=24,id=5145},
-    S{name="Arcane Missiles",rank=4,school=7,spellType="ch_dmg",minDmg=415,maxDmg=415,manaCost=320,castTime=5,spCoeff=1,cd=0,level=32,id=8416},
-    S{name="Arcane Missiles",rank=5,school=7,spellType="ch_dmg",minDmg=575,maxDmg=575,manaCost=410,castTime=5,spCoeff=1,cd=0,level=40,id=8417},
-    S{name="Arcane Missiles",rank=6,school=7,spellType="ch_dmg",minDmg=755,maxDmg=755,manaCost=500,castTime=5,spCoeff=1,cd=0,level=48,id=10211},
-    S{name="Arcane Missiles",rank=7,school=7,spellType="ch_dmg",minDmg=960,maxDmg=960,manaCost=595,castTime=5,spCoeff=1,cd=0,level=56,id=10212},
-    S{name="Arcane Missiles",rank=8,school=7,spellType="ch_dmg",minDmg=1150,maxDmg=1150,manaCost=655,castTime=5,spCoeff=1,cd=0,level=56,id=25345},
+    S{name="Arcane Missiles",rank=1,school=7,spellType="ch_dmg",minDmg=72,maxDmg=72,manaCost=85,castTime=3,spCoeff=0.33,cd=0,level=8,canCrit=true,id=5143},
+    S{name="Arcane Missiles",rank=2,school=7,spellType="ch_dmg",minDmg=144,maxDmg=144,manaCost=140,castTime=4,spCoeff=0.68,cd=0,level=16,canCrit=true,id=5144},
+    S{name="Arcane Missiles",rank=3,school=7,spellType="ch_dmg",minDmg=280,maxDmg=280,manaCost=235,castTime=5,spCoeff=1,cd=0,level=24,canCrit=true,id=5145},
+    S{name="Arcane Missiles",rank=4,school=7,spellType="ch_dmg",minDmg=415,maxDmg=415,manaCost=320,castTime=5,spCoeff=1,cd=0,level=32,canCrit=true,id=8416},
+    S{name="Arcane Missiles",rank=5,school=7,spellType="ch_dmg",minDmg=575,maxDmg=575,manaCost=410,castTime=5,spCoeff=1,cd=0,level=40,canCrit=true,id=8417},
+    S{name="Arcane Missiles",rank=6,school=7,spellType="ch_dmg",minDmg=755,maxDmg=755,manaCost=500,castTime=5,spCoeff=1,cd=0,level=48,canCrit=true,id=10211},
+    S{name="Arcane Missiles",rank=7,school=7,spellType="ch_dmg",minDmg=960,maxDmg=960,manaCost=595,castTime=5,spCoeff=1,cd=0,level=56,canCrit=true,id=10212},
+    S{name="Arcane Missiles",rank=8,school=7,spellType="ch_dmg",minDmg=1150,maxDmg=1150,manaCost=655,castTime=5,spCoeff=1,cd=0,level=56,canCrit=true,id=25345},
 
     -- ARCANE EXPLOSION
     S{name="Arcane Explosion",rank=1,school=7,spellType="damage",minDmg=32,maxDmg=36,manaCost=75,castTime=0,spCoeff=0.111,cd=0,level=14,isAoE=true,id=1449},
@@ -311,16 +313,16 @@ SPELLCALC_SPELLS["PRIEST"] = {
     S{name="Desperate Prayer",rank=7,school=2,spellType="heal",minDmg=1126,maxDmg=1328,manaCost=0,castTime=0,hpCoeff=0.429,cd=600,level=58,id=19243},
 
     -- POWER WORD: SHIELD
-    S{name="Power Word: Shield",rank=1,school=2,spellType="heal",minDmg=44,maxDmg=44,manaCost=45,castTime=0,hpCoeff=0.048,cd=4,level=6,id=17},
-    S{name="Power Word: Shield",rank=2,school=2,spellType="heal",minDmg=88,maxDmg=88,manaCost=80,castTime=0,hpCoeff=0.07,cd=4,level=12,id=592},
-    S{name="Power Word: Shield",rank=3,school=2,spellType="heal",minDmg=158,maxDmg=158,manaCost=130,castTime=0,hpCoeff=0.093,cd=4,level=18,id=600},
-    S{name="Power Word: Shield",rank=4,school=2,spellType="heal",minDmg=234,maxDmg=234,manaCost=175,castTime=0,hpCoeff=0.1,cd=4,level=24,id=3747},
-    S{name="Power Word: Shield",rank=5,school=2,spellType="heal",minDmg=301,maxDmg=301,manaCost=210,castTime=0,hpCoeff=0.1,cd=4,level=30,id=6065},
-    S{name="Power Word: Shield",rank=6,school=2,spellType="heal",minDmg=381,maxDmg=381,manaCost=250,castTime=0,hpCoeff=0.1,cd=4,level=36,id=6066},
-    S{name="Power Word: Shield",rank=7,school=2,spellType="heal",minDmg=484,maxDmg=484,manaCost=300,castTime=0,hpCoeff=0.1,cd=4,level=42,id=10898},
-    S{name="Power Word: Shield",rank=8,school=2,spellType="heal",minDmg=605,maxDmg=605,manaCost=355,castTime=0,hpCoeff=0.1,cd=4,level=48,id=10899},
-    S{name="Power Word: Shield",rank=9,school=2,spellType="heal",minDmg=763,maxDmg=763,manaCost=425,castTime=0,hpCoeff=0.1,cd=4,level=54,id=10900},
-    S{name="Power Word: Shield",rank=10,school=2,spellType="heal",minDmg=942,maxDmg=942,manaCost=500,castTime=0,hpCoeff=0.1,cd=4,level=60,id=10901},
+    S{name="Power Word: Shield",rank=1,school=2,spellType="heal",minDmg=44,maxDmg=44,manaCost=45,castTime=0,hpCoeff=0.048,cd=4,level=6,noCrit=true,id=17},
+    S{name="Power Word: Shield",rank=2,school=2,spellType="heal",minDmg=88,maxDmg=88,manaCost=80,castTime=0,hpCoeff=0.07,cd=4,level=12,noCrit=true,id=592},
+    S{name="Power Word: Shield",rank=3,school=2,spellType="heal",minDmg=158,maxDmg=158,manaCost=130,castTime=0,hpCoeff=0.093,cd=4,level=18,noCrit=true,id=600},
+    S{name="Power Word: Shield",rank=4,school=2,spellType="heal",minDmg=234,maxDmg=234,manaCost=175,castTime=0,hpCoeff=0.1,cd=4,level=24,noCrit=true,id=3747},
+    S{name="Power Word: Shield",rank=5,school=2,spellType="heal",minDmg=301,maxDmg=301,manaCost=210,castTime=0,hpCoeff=0.1,cd=4,level=30,noCrit=true,id=6065},
+    S{name="Power Word: Shield",rank=6,school=2,spellType="heal",minDmg=381,maxDmg=381,manaCost=250,castTime=0,hpCoeff=0.1,cd=4,level=36,noCrit=true,id=6066},
+    S{name="Power Word: Shield",rank=7,school=2,spellType="heal",minDmg=484,maxDmg=484,manaCost=300,castTime=0,hpCoeff=0.1,cd=4,level=42,noCrit=true,id=10898},
+    S{name="Power Word: Shield",rank=8,school=2,spellType="heal",minDmg=605,maxDmg=605,manaCost=355,castTime=0,hpCoeff=0.1,cd=4,level=48,noCrit=true,id=10899},
+    S{name="Power Word: Shield",rank=9,school=2,spellType="heal",minDmg=763,maxDmg=763,manaCost=425,castTime=0,hpCoeff=0.1,cd=4,level=54,noCrit=true,id=10900},
+    S{name="Power Word: Shield",rank=10,school=2,spellType="heal",minDmg=942,maxDmg=942,manaCost=500,castTime=0,hpCoeff=0.1,cd=4,level=60,noCrit=true,id=10901},
 }
 
 -- ============================================================================
@@ -684,13 +686,17 @@ SPELLCALC_TALENTS = {}
 
 -- [patch] Talentwerte gegen die Client-Daten von OctoWoW geprueft
 -- (Talent.dbc/Spell.dbc aus patch-4.mpq bzw. patch-O.mpq, 2026-10-02).
--- Die Talentbaeume weichen teils stark von Classic 1.12 ab.
---   perRank   linearer Bonus pro Rang
+-- Die Talentbaeume weichen teils stark von Classic 1.12 ab. Welche Zauber
+-- ein Talent trifft, folgt der Zauber-Maske des Talents im Client.
+--   perRank   Bonus pro Rang (linear)
 --   values    Bonus je Rang, wenn nicht linear
 --   part      "direct" oder "dot": wirkt nur auf diesen Teil des Zaubers
 --   key       eigener Name, wenn ein Talent mehrere Eintraege braucht
--- Talente, die nur Krit, Zauberzeit, Kosten oder Cooldown aendern, werden
--- (noch) nicht beruecksichtigt.
+--   buff      Talent zaehlt nur mit aktivem Buff (Teil des Symbolnamens)
+--   mod       Art des Talents, ohne mod = Schaden/Heilung in Prozent:
+--             cast (Sek.), cd (Sek.), duration (Sek.), cost (Anteil),
+--             crit (Anteil), critbonus (Anteil des Krit-Bonus)
+--   affectType "damage"/"healing"/"both"; fehlt er, gilt er fuer beides
 
 SPELLCALC_TALENTS["MAGE"] = {
     { name="Fire Power",         perRank=0.02, maxRank=5, affectType="damage", affectSchool={3} },
@@ -698,18 +704,42 @@ SPELLCALC_TALENTS["MAGE"] = {
     { name="Improved Cone of Cold", values={0.15, 0.25, 0.35}, maxRank=3, affectType="damage", affectSpells={"Cone of Cold"} },
     -- Proc: 8/16/25% Chance auf +25% Schaden -> Erwartungswert, nur Arkan
     { name="Arcane Instability", values={0.02, 0.04, 0.0625}, maxRank=3, affectType="damage", affectSchool={7} },
+
+    { name="Improved Frostbolt", mod="cast", perRank=-0.1, maxRank=5, affectSpells={"Frostbolt"} },
+    { name="Improved Fireball",  mod="cast", perRank=-0.1, maxRank=5, affectSpells={"Fireball"} },
+    { name="Improved Fire Blast", mod="cd",  perRank=-0.5, maxRank=3, affectSpells={"Fire Blast"} },
+    { name="Improved Frost Nova", mod="cd",  perRank=-2,   maxRank=2, affectSpells={"Frost Nova"} },
+    { name="Frost Channeling",   mod="cost", perRank=-0.05, maxRank=3, affectSchool={5} },
+    { name="Critical Mass",      mod="crit", perRank=0.02, maxRank=3, affectSchool={3} },
+    { name="Incinerate",         mod="crit", perRank=0.02, maxRank=2, affectSpells={"Fire Blast","Scorch"} },
+    { name="Improved Flamestrike", mod="crit", perRank=0.05, maxRank=3, affectSpells={"Flamestrike"} },
+    { name="Arcane Impact",      mod="crit", perRank=0.02, maxRank=3, affectSpells={"Arcane Explosion","Arcane Missiles"} },
+    { name="Ice Shards",         mod="critbonus", perRank=0.2, maxRank=5, affectSchool={5} },
+    { name="Arcane Potency",     mod="critbonus", perRank=0.5, maxRank=2, affectSpells={"Arcane Explosion","Arcane Missiles"} },
 }
 
 SPELLCALC_TALENTS["PRIEST"] = {
     { name="Darkness",           perRank=0.02, maxRank=5, affectType="damage", affectSchool={6} },
-    { name="Shadowform",         perRank=0.15, maxRank=1, affectType="damage", affectSchool={6} },
-    -- Schaden nur Smite, Holy Fire, Mind Blast (plus Holy Nova/Chastise, nicht in der Liste)
+    { name="Shadowform",         perRank=0.15, maxRank=1, affectType="damage", affectSchool={6}, buff="Spell_Shadow_Shadowform" },
+    -- Schaden nur Smite, Holy Fire, Mind Blast (plus Holy Nova/Chastise laut Maske nicht)
     { name="Force of Will",      perRank=0.01, maxRank=5, affectType="damage", affectSpells={"Smite","Holy Fire","Mind Blast"} },
     { name="Force of Will", key="Force of Will (Shield)", perRank=0.04, maxRank=5, affectType="healing", affectSpells={"Power Word: Shield"} },
+    { name="Force of Will", key="Force of Will (Crit)", mod="crit", perRank=0.01, maxRank=5, affectType="damage",
+      affectSpells={"Smite","Holy Fire","Holy Nova","Mind Blast","Pain Spike","Shadow Word: Pain","Mind Flay","Starshards"} },
     { name="Spiritual Healing",  perRank=0.06, maxRank=5, affectType="healing",
       affectSpells={"Lesser Heal","Heal","Greater Heal","Flash Heal","Renew","Prayer of Healing"} },
     { name="Improved Renew",     perRank=0.05, maxRank=3, affectType="healing", affectSpells={"Renew"} },
     { name="Improved Power Word: Shield", perRank=0.05, maxRank=3, affectType="healing", affectSpells={"Power Word: Shield"} },
+
+    { name="Divine Fury",        mod="cast", perRank=-0.1, maxRank=5, affectSpells={"Smite","Holy Fire","Heal","Greater Heal"} },
+    { name="Improved Mind Blast", mod="cd",  perRank=-0.5, maxRank=5, affectSpells={"Mind Blast"} },
+    { name="Improved Shadow Word: Pain", mod="duration", perRank=3, maxRank=2, affectSpells={"Shadow Word: Pain"} },
+    { name="Empowered Recovery", mod="duration", values={3, 3}, maxRank=2, affectSpells={"Renew"} },
+    { name="Mental Agility",     mod="cost", perRank=-0.02, maxRank=5,
+      affectSpells={"Smite","Holy Fire","Holy Nova","Holy Nova (Heal)","Chastise","Shadow Word: Pain","Devouring Plague","Starshards","Renew","Power Word: Shield"} },
+    { name="Improved Healing",   mod="cost", perRank=-0.05, maxRank=3, affectSpells={"Lesser Heal","Heal","Greater Heal","Prayer of Healing"} },
+    { name="Divinity",           mod="crit", perRank=0.01, maxRank=5,
+      affectSpells={"Smite","Holy Fire","Holy Nova","Holy Nova (Heal)","Starshards","Flash Heal","Greater Heal","Heal","Lesser Heal","Prayer of Healing","Desperate Prayer"} },
 }
 
 SPELLCALC_TALENTS["WARLOCK"] = {
@@ -719,6 +749,17 @@ SPELLCALC_TALENTS["WARLOCK"] = {
     { name="Aftermath",          perRank=0.02, maxRank=3, affectType="damage", affectSpells={"Immolate"}, part="dot" },
     { name="Improved Curse of Agony", values={0.03, 0.06, 0.10}, maxRank=3, affectType="damage", affectSpells={"Curse of Agony"} },
     { name="Improved Drains",    perRank=0.05, maxRank=2, affectType="damage", affectSpells={"Drain Life"} },
+
+    { name="Bane",               mod="cast", perRank=-0.1, maxRank=5, affectSpells={"Shadow Bolt","Immolate","Searing Pain"} },
+    { name="Bane", key="Bane (Soul Fire)", mod="cast", perRank=-0.4, maxRank=5, affectSpells={"Soul Fire"} },
+    { name="Improved Corruption", mod="cast", perRank=-0.3, maxRank=5, affectSpells={"Corruption"} },
+    { name="Cataclysm",          mod="cost", perRank=-0.02, maxRank=5,
+      affectSpells={"Shadow Bolt","Immolate","Searing Pain","Soul Fire","Shadowburn","Conflagrate","Rain of Fire","Hellfire"} },
+    { name="Devastation",        mod="crit", perRank=0.01, maxRank=5,
+      affectSpells={"Shadow Bolt","Immolate","Searing Pain","Soul Fire","Shadowburn","Conflagrate","Rain of Fire","Hellfire"} },
+    { name="Improved Searing Pain", mod="crit", perRank=0.02, maxRank=5, affectSpells={"Searing Pain"} },
+    { name="Ruin",               mod="critbonus", perRank=1.0, maxRank=1,
+      affectSpells={"Shadow Bolt","Immolate","Searing Pain","Soul Fire","Shadowburn","Conflagrate","Rain of Fire","Hellfire"} },
 }
 
 SPELLCALC_TALENTS["DRUID"] = {
@@ -729,6 +770,17 @@ SPELLCALC_TALENTS["DRUID"] = {
       affectSpells={"Moonfire","Insect Swarm","Hurricane","Rejuvenation","Regrowth","Tranquility"} },
     { name="Gift of Nature",     perRank=0.02, maxRank=5, affectType="healing", affectSchool="all" },
     { name="Improved Tranquility", perRank=0.20, maxRank=2, affectType="healing", affectSpells={"Tranquility"} },
+
+    { name="Improved Wrath",     mod="cast", perRank=-0.1, maxRank=5, affectSpells={"Wrath"} },
+    { name="Improved Starfire",  mod="cast", values={-0.17, -0.34, -0.5}, maxRank=3, affectSpells={"Starfire"} },
+    { name="Improved Healing Touch", mod="cast", perRank=-0.1, maxRank=5, affectSpells={"Healing Touch"} },
+    { name="Moonglow",           mod="cost", perRank=-0.03, maxRank=3,
+      affectSpells={"Wrath","Starfire","Moonfire","Insect Swarm","Hurricane","Healing Touch","Regrowth","Rejuvenation"} },
+    { name="Tranquil Spirit",    mod="cost", perRank=-0.02, maxRank=5, affectSpells={"Healing Touch","Regrowth","Tranquility"} },
+    { name="Gale Winds",         mod="cost", perRank=-0.1, maxRank=2, affectSpells={"Hurricane"} },
+    { name="Improved Moonfire", key="Improved Moonfire (Crit)", mod="crit", perRank=0.05, maxRank=2, affectSpells={"Moonfire"} },
+    { name="Improved Regrowth",  mod="crit", perRank=0.10, maxRank=5, affectSpells={"Regrowth"} },
+    { name="Vengeance",          mod="critbonus", perRank=0.2, maxRank=5, affectSpells={"Wrath","Starfire","Moonfire"} },
 }
 
 SPELLCALC_TALENTS["SHAMAN"] = {
@@ -736,9 +788,26 @@ SPELLCALC_TALENTS["SHAMAN"] = {
       affectSpells={"Lightning Bolt","Chain Lightning","Earth Shock","Flame Shock","Frost Shock"} },
     { name="Call of Flame",      perRank=0.05, maxRank=3, affectType="damage", affectSpells={"Flame Shock"} },
     { name="Elemental Fury",     perRank=0.05, maxRank=2, affectType="damage", affectSchool={3,4,5} },
+
+    { name="Improved Healing Wave", mod="cast", perRank=-0.15, maxRank=5, affectSpells={"Healing Wave"} },
+    { name="Lightning Mastery",  mod="cast", perRank=-0.2, maxRank=5, affectSpells={"Lightning Bolt","Chain Lightning"} },
+    { name="Improved Chain Heal", mod="cast", perRank=-0.2, maxRank=5, affectSpells={"Chain Heal"} },
+    { name="Reverberation",      mod="cd", values={-0.333, -0.666, -1}, maxRank=3, affectSpells={"Earth Shock","Flame Shock","Frost Shock"} },
+    { name="Convection",         mod="cost", perRank=-0.02, maxRank=5,
+      affectSpells={"Lightning Bolt","Chain Lightning","Earth Shock","Flame Shock","Frost Shock"} },
+    { name="Tidal Focus",        mod="cost", perRank=-0.01, maxRank=5, affectSpells={"Healing Wave","Lesser Healing Wave","Chain Heal"} },
+    { name="Call of Thunder",    mod="crit", values={0.01, 0.02, 0.03, 0.04, 0.06}, maxRank=5, affectSpells={"Lightning Bolt","Chain Lightning"} },
+    { name="Tidal Mastery",      mod="crit", perRank=0.01, maxRank=5,
+      affectSpells={"Lightning Bolt","Chain Lightning","Healing Wave","Lesser Healing Wave","Chain Heal"} },
+    { name="Element's Grace", key="Element's Grace (Crit)", mod="crit", perRank=0.02, maxRank=5, affectSpells={"Earth Shock","Flame Shock","Frost Shock"} },
+    { name="Elemental Fury", key="Elemental Fury (Crit)", mod="critbonus", perRank=0.5, maxRank=2,
+      affectSpells={"Lightning Bolt","Chain Lightning","Earth Shock","Flame Shock","Frost Shock"} },
 }
 
 SPELLCALC_TALENTS["PALADIN"] = {
     { name="Healing Light",      perRank=0.04, maxRank=3, affectType="healing",
       affectSpells={"Flash of Light","Holy Light","Holy Shock (Heal)"} },
+
+    { name="Holy Power",         mod="crit", perRank=0.02, maxRank=3, affectSpells={"Flash of Light","Holy Light","Holy Shock","Holy Shock (Heal)"} },
+    { name="Divine Favor",       mod="crit", perRank=0.10, maxRank=5, affectSpells={"Holy Shock","Holy Shock (Heal)"} },
 }
