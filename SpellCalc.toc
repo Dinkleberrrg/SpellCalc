@@ -1,0 +1,10 @@
+## Interface: 11200
+## Title: SpellCalc
+## Notes: Spell damage/healing calculator with all ranks, cooldowns, talents, and SP/HP
+## Author: SpellCalc
+## Version: 2.0.0
+## OptionalDeps: BetterCharacterStats
+## SavedVariables: SpellCalcSettings
+
+SpellData.lua
+SpellCalc.lua
