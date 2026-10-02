@@ -51,6 +51,11 @@ The per-second value uses the **longest** of cast time, GCD (1.5s), or cooldown:
 - `Cone of Cold R5` (instant, 10s CD) → DPS = damage / 10.0
 - `Shadow Bolt R10` (3.0s cast, no CD) → DPS = damage / 3.0
 - DoTs: total damage / max(duration, cooldown)
+- Direct + DoT (Fireball, Pyroblast, Moonfire, Immolate, Regrowth ...):
+  direct part / cycle + DoT part / max(DoT duration, cycle), i.e. the
+  sustained rate when you cast only this spell and refresh the DoT.
+  The tooltip also shows the value per cast time (full DoT ticking while
+  you cast other spells).
 
 ## Columns
 

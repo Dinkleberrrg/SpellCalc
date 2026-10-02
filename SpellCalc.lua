@@ -377,9 +377,22 @@ function SpellCalc:CalcSpell(spellData)
         result.directPart = Round(directTotal, 1)
         result.dotPart = Round(dotTotal, 1)
         result.perMana = Round(grandTotal / math.max(result.manaCost, 1), 2)
-        -- Time = cast + dot duration, but at least cooldown
-        local totalTime = math.max(effectiveCast + (dotDuration or 0), result.cd)
-        result.perSecond = Round(grandTotal / totalTime, 1)
+        -- [patch] /Sec = Dauer-DPS, wenn man nur diesen Zauber wirkt:
+        -- alle "cycle" Sekunden ein Direkttreffer; der DoT wird dabei
+        -- erneuert, bevor er auslaeuft, bringt also pro Sekunde hoechstens
+        -- DoT/Dauer. Vorher stand hier Gesamt / (Zauberzeit + DoT-Dauer),
+        -- was z.B. Pyroblast auf 18 s und Moonfire auf 19,5 s verteilt hat.
+        local cycle = effectiveTime
+        local dur = dotDuration or 0
+        local dotPerSec = 0
+        if dur > 0 then
+            dotPerSec = dotTotal / math.max(dur, cycle)
+        end
+        result.perSecond = Round(directTotal / cycle + dotPerSec, 1)
+        -- Fuer den Tooltip: Wert pro Zauberzeit (wenn der DoT neben anderen
+        -- Zaubern voll auslaeuft) und DoT-Anteil pro Sekunde
+        result.perCastTime = Round(grandTotal / cycle, 1)
+        result.dotPerSecond = Round(dotPerSec, 1)
         result.dotDuration = dotDuration
 
     elseif isChannel then
@@ -931,6 +944,16 @@ function SpellCalc:ShowTooltip(row)
     GameTooltip:AddDoubleLine(effLabel .. " (per mana):", string.format("%.2f", d.perMana or 0), 0.5, 0.8, 1, 1, 1, 1)
     local dpsLabel = d.isHeal and "HPS" or "DPS"
     GameTooltip:AddDoubleLine(dpsLabel .. " (per second):", string.format("%.1f", d.perSecond or 0), 1, 0.87, 0.3, 1, 1, 1)
+    -- [patch] Direkt + DoT/HoT aufgeschluesselt
+    if d.perCastTime then
+        local dotLabel = d.isHeal and "HoT" or "DoT"
+        GameTooltip:AddLine("  = spamming only this spell (" .. dotLabel .. " refreshed)", 0.5, 0.5, 0.5)
+        GameTooltip:AddDoubleLine("  " .. dotLabel .. " part per second:", string.format("%.1f", d.dotPerSecond or 0),
+            0.6, 0.6, 0.6, 0.9, 0.9, 0.9)
+        GameTooltip:AddDoubleLine("  Per cast time (in rotation):", string.format("%.1f", d.perCastTime),
+            0.6, 0.6, 0.6, 0.9, 0.9, 0.9)
+        GameTooltip:AddLine("  = full " .. dotLabel .. " ticks while you cast other spells", 0.5, 0.5, 0.5)
+    end
 
     -- [patch] Krit
     if d.canCrit and d.critChance then
