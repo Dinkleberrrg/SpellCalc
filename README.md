@@ -1,6 +1,6 @@
-# SpellCalc - Turtle WoW Addon
+# SpellCalc - OctoWoW Addon (1.12 client)
 
-Spell damage/healing calculator for all caster classes in Turtle WoW (1.12 client).
+Spell damage/healing calculator for all caster classes on OctoWoW (1.12 client).
 Shows every rank of every spell with cooldown-aware efficiency metrics.
 
 ## Features
@@ -59,15 +59,29 @@ The per-second value uses the **longest** of cast time, GCD (1.5s), or cooldown:
 - **Mana**: Mana cost
 - **CD**: Cooldown duration (- = none)
 
-## Extending
+## Extending / regenerating data
 
-Edit `SpellData.lua` to add spells. Each entry follows this format:
+`SpellData.lua` (spell part) is generated from the game client's own data, so
+values match what the client shows:
+
+1. Extract `Spell.dbc`, `SpellCastTimes.dbc`, `SpellDuration.dbc` and
+   `SkillLineAbility.dbc` from the client MPQs (`tools/mpq.py`; the newest
+   patch MPQ wins) into one folder.
+2. Run `python tools/gen.py > spells.lua` in that folder and replace the
+   spell tables in `SpellData.lua` with the output.
+
+Coefficients are not stored in the client. They are set per spell in
+`tools/gen.py` (top-rank value) and scaled per rank by cast time or
+duration, including the below-level-20 penalty.
+
+Entry format:
 
 ```lua
 S{name="Spell", rank=1, school=5, spellType="damage",
   minDmg=100, maxDmg=150, manaCost=200, castTime=2.5,
-  spCoeff=0.714, cd=0, level=30},
+  spCoeff=0.714, cd=0, level=30, id=12345},
 ```
 
 Schools: 2=Holy, 3=Fire, 4=Nature, 5=Frost, 6=Shadow, 7=Arcane
 Types: "damage", "heal", "dot", "hot", "dd+dot", "dd+hot", "ch_dmg", "ch_heal"
+Optional: `manaPct` (cost in % of base mana), `isAoE`.

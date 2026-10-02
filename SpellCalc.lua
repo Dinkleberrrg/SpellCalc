@@ -207,6 +207,17 @@ function SpellCalc:GetHealingPower()
     return 0
 end
 
+-- [patch] Grundmana = Maximalmana ohne den Anteil aus Intelligenz
+-- (die ersten 20 Int geben je 1 Mana, jeder weitere Punkt 15).
+function SpellCalc:GetBaseMana()
+    local maxMana = UnitManaMax("player") or 0
+    local _, int = UnitStat("player", 4)
+    int = int or 0
+    local fromInt = int
+    if int > 20 then fromInt = 20 + (int - 20) * 15 end
+    return math.max(maxMana - fromInt, 0)
+end
+
 -- ============================================================================
 -- SPELL CALCULATION (with cooldown)
 -- ============================================================================
@@ -217,7 +228,11 @@ function SpellCalc:CalcSpell(spellData)
     result.rank = spellData.rank
     result.school = spellData.school
     result.spellType = spellData.spellType
-    result.manaCost = spellData.manaCost
+    result.manaCost = spellData.manaCost or 0
+    -- [patch] Manche Zauber kosten Prozent des Grundmanas (z.B. Chastise)
+    if result.manaCost == 0 and spellData.manaPct then
+        result.manaCost = math.floor(self:GetBaseMana() * spellData.manaPct / 100 + 0.5)
+    end
     result.castTime = spellData.castTime
     result.cd = spellData.cd or 0
     result.isAoE = spellData.isAoE
@@ -251,7 +266,7 @@ function SpellCalc:CalcSpell(spellData)
         local total = (baseAvg + sp * coeff) * talentMult
 
         result.avgValue = Round(total, 1)
-        result.perMana = Round(total / math.max(spellData.manaCost, 1), 2)
+        result.perMana = Round(total / math.max(result.manaCost, 1), 2)
         result.perSecond = Round(total / effectiveTime, 1)
 
     elseif sType == "dot" or sType == "hot" then
@@ -261,7 +276,7 @@ function SpellCalc:CalcSpell(spellData)
         local total = (baseTotal + sp * coeff) * talentMult
 
         result.avgValue = Round(total, 1)
-        result.perMana = Round(total / math.max(spellData.manaCost, 1), 2)
+        result.perMana = Round(total / math.max(result.manaCost, 1), 2)
         -- For DoTs: effective time is the longer of dot duration or cooldown
         local dotEffective = math.max(spellData.dotDuration or 1, result.cd)
         result.perSecond = Round(total / dotEffective, 1)
@@ -280,7 +295,7 @@ function SpellCalc:CalcSpell(spellData)
         result.avgValue = Round(grandTotal, 1)
         result.directPart = Round(directTotal, 1)
         result.dotPart = Round(dotTotal, 1)
-        result.perMana = Round(grandTotal / math.max(spellData.manaCost, 1), 2)
+        result.perMana = Round(grandTotal / math.max(result.manaCost, 1), 2)
         -- Time = cast + dot duration, but at least cooldown
         local totalTime = math.max(effectiveCast + (spellData.dotDuration or 0), result.cd)
         result.perSecond = Round(grandTotal / totalTime, 1)
@@ -292,7 +307,7 @@ function SpellCalc:CalcSpell(spellData)
         local total = (baseAvg + sp * coeff) * talentMult
 
         result.avgValue = Round(total, 1)
-        result.perMana = Round(total / math.max(spellData.manaCost, 1), 2)
+        result.perMana = Round(total / math.max(result.manaCost, 1), 2)
         -- Channel time is the cast, but cooldown might be longer
         local chanTime = math.max(spellData.castTime, result.cd)
         result.perSecond = Round(total / chanTime, 1)
@@ -370,7 +385,9 @@ function SpellCalc:GetFilteredSorted()
         elseif self.currentFilter == "healing" and r.isHeal then show = true
         end
         -- [patch] Rang muss exakt im Zauberbuch stehen
-        if show and known and not known[r.name .. "|" .. r.rank] then
+        -- "Holy Shock (Heal)" usw. steht im Zauberbuch ohne Zusatz
+        local bookName = string.gsub(r.name, " %(Heal%)$", "")
+        if show and known and not known[bookName .. "|" .. r.rank] then
             show = false
         end
         if show then table.insert(filtered, r) end
