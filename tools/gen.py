@@ -14,8 +14,8 @@ def ranks_for(cls, name, want=None, fam_strict=True):
     out = {}
     cands = BYNAME.get(name, [])
     if any(s in SLA for s in cands) and fam_strict:
-        # Wenn der Zauber im Klassen-Skill steht, nur diese Eintraege nehmen
-        # (sonst rutschen alte/fremde Raenge gleichen Namens hinein)
+        # if the spell is in the class skill line, only take those entries
+        # (otherwise old/foreign ranks with the same name slip in)
         slac = [s for s in cands if s in SLA]
         if not want or any(want(parse(s)) for s in slac):
             cands = slac
@@ -36,7 +36,7 @@ def ranks_for(cls, name, want=None, fam_strict=True):
     return {k: v[1] for k, v in sorted(out.items())}
 
 # name, type, direct coeff (top rank), periodic coeff (top rank), flags
-# est = Koeffizient geschaetzt (Turtle/OctoWoW-Zauber ohne bekannte Werte)
+# est = coefficient estimated (Turtle/OctoWoW spells without known values)
 SPELLS = {
  'MAGE': [
   ('Frostbolt', 'damage', 0.814, 0, {}),
@@ -142,7 +142,7 @@ def values(cls, name, typ, flags):
     for r, sid in rk.items():
         o = parse(sid)
         if flags.get('shock'):
-            # Holy Shock: Hauptzauber hat nur Dummy, Werte im ausgeloesten Zauber
+            # Holy Shock: the main spell only has a dummy, values are in the triggered spell
             trig = [s for s in BYNAME['Holy Shock'] if sstr(SPELL[s][129]) == 'Rank %d' % r
                     and parse(s).get('dkind') == flags['shock']]
             if not trig: continue
@@ -179,7 +179,7 @@ def gen():
                 continue
             top = vals[-1][1]
             label = flags.get('label', name)
-            note = '  (Koeffizient geschaetzt)' if flags.get('est') else ''
+            note = '  (coefficient estimated)' if flags.get('est') else ''
             lines.append('    -- %s%s' % (label.upper(), note))
             for r, o in vals:
                 pen = level_pen(o['lvl'])
