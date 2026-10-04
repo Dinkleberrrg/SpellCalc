@@ -3,19 +3,19 @@
 -- spellType: "damage", "heal", "dot", "hot", "dd+dot", "dd+hot", "ch_dmg", "ch_heal"
 -- cd = cooldown in seconds (0 = no cooldown)
 --
--- [patch] Zauberdaten automatisch aus dem OctoWoW-Client erzeugt
--- (Spell.dbc aus patch-O.mpq, SkillLineAbility.dbc, Stand 2026-10-02).
--- Werte, Mana, Zauberzeit, Cooldown, Dauer und Lernlevel stammen 1:1 aus
--- dem Client. id = Zauber-ID im Client.
--- Koeffizienten stehen NICHT im Client (serverseitig). Sie basieren auf den
--- bekannten Classic-Werten des hoechsten Rangs, werden je Rang ueber
--- Zauberzeit bzw. Dauer skaliert und enthalten den Abzug fuer Zauber unter
--- Level 20 (x(1 - (20 - Level) * 0.0375)). "geschaetzt" = OctoWoW-eigene
--- Zauber oder geaenderte Dauer, ohne bekannten Referenzwert.
--- manaPct = Kosten in Prozent des Grundmanas (statt manaCost).
--- Kanalisierte Zauber: minDmg/maxDmg = Gesamtwert, castTime = Kanaldauer.
--- canCrit = kanalisierter Zauber mit kritfaehigen Einzeltreffern,
--- noCrit = kann nie kritisch wirken (Absorb).
+-- [patch] Spell data generated automatically from the OctoWoW client
+-- (Spell.dbc from patch-O.mpq, SkillLineAbility.dbc, as of 2026-10-02).
+-- Values, mana, cast time, cooldown, duration and learn level come 1:1 from
+-- the client. id = spell ID in the client.
+-- Coefficients are NOT in the client (server side). They are based on the
+-- known Classic values of the highest rank, scaled per rank by cast time
+-- or duration, and include the penalty for spells below level 20
+-- (x(1 - (20 - level) * 0.0375)). "estimated" = OctoWoW-specific spells
+-- or changed durations without a known reference value.
+-- manaPct = cost in percent of base mana (instead of manaCost).
+-- Channelled spells: minDmg/maxDmg = total value, castTime = channel time.
+-- canCrit = channelled spell whose individual hits can crit,
+-- noCrit = can never crit (absorb).
 
 SPELLCALC_SCHOOLS = {
     [2] = { name = "Holy",   color = {1.0, 0.9, 0.0} },
@@ -136,7 +136,7 @@ SPELLCALC_SPELLS["MAGE"] = {
     S{name="Arcane Explosion",rank=5,school=7,spellType="damage",minDmg=186,maxDmg=202,manaCost=315,castTime=0,spCoeff=0.143,cd=0,level=46,isAoE=true,id=10201},
     S{name="Arcane Explosion",rank=6,school=7,spellType="damage",minDmg=243,maxDmg=263,manaCost=390,castTime=0,spCoeff=0.143,cd=0,level=54,isAoE=true,id=10202},
 
-    -- ARCANE RUPTURE  (Koeffizient geschaetzt)
+    -- ARCANE RUPTURE  (coefficient estimated)
     S{name="Arcane Rupture",rank=1,school=7,spellType="damage",minDmg=101,maxDmg=114,manaCost=80,castTime=2.5,spCoeff=0.714,cd=15,level=20,id=51949},
     S{name="Arcane Rupture",rank=2,school=7,spellType="damage",minDmg=171,maxDmg=190,manaCost=145,castTime=2.5,spCoeff=0.714,cd=15,level=28,id=51950},
     S{name="Arcane Rupture",rank=3,school=7,spellType="damage",minDmg=302,maxDmg=333,manaCost=210,castTime=2.5,spCoeff=0.714,cd=15,level=36,id=51951},
@@ -144,7 +144,7 @@ SPELLCALC_SPELLS["MAGE"] = {
     S{name="Arcane Rupture",rank=5,school=7,spellType="damage",minDmg=528,maxDmg=576,manaCost=320,castTime=2.5,spCoeff=0.714,cd=15,level=52,id=51953},
     S{name="Arcane Rupture",rank=6,school=7,spellType="damage",minDmg=703,maxDmg=765,manaCost=390,castTime=2.5,spCoeff=0.714,cd=15,level=60,id=51954},
 
-    -- ARCANE SURGE  (Koeffizient geschaetzt)
+    -- ARCANE SURGE  (coefficient estimated)
     S{name="Arcane Surge",rank=1,school=7,spellType="damage",minDmg=202,maxDmg=244,manaCost=85,castTime=0,spCoeff=0.429,cd=8,level=32,id=51933},
     S{name="Arcane Surge",rank=2,school=7,spellType="damage",minDmg=290,maxDmg=349,manaCost=110,castTime=0,spCoeff=0.429,cd=8,level=40,id=51934},
     S{name="Arcane Surge",rank=3,school=7,spellType="damage",minDmg=398,maxDmg=474,manaCost=140,castTime=0,spCoeff=0.429,cd=8,level=48,id=51935},
@@ -192,7 +192,7 @@ SPELLCALC_SPELLS["PRIEST"] = {
     S{name="Holy Nova",rank=5,school=2,spellType="damage",minDmg=133,maxDmg=155,manaCost=390,castTime=0,spCoeff=0.107,cd=0,level=52,isAoE=true,id=27800},
     S{name="Holy Nova",rank=6,school=2,spellType="damage",minDmg=172,maxDmg=200,manaCost=480,castTime=0,spCoeff=0.107,cd=0,level=60,isAoE=true,id=27801},
 
-    -- CHASTISE  (Koeffizient geschaetzt)
+    -- CHASTISE  (coefficient estimated)
     S{name="Chastise",rank=1,school=2,spellType="damage",minDmg=139,maxDmg=160,manaCost=0,castTime=0,spCoeff=0.429,manaPct=6,cd=40,level=35,id=51478},
     S{name="Chastise",rank=2,school=2,spellType="damage",minDmg=209,maxDmg=240,manaCost=0,castTime=0,spCoeff=0.429,manaPct=6,cd=40,level=45,id=51479},
     S{name="Chastise",rank=3,school=2,spellType="damage",minDmg=278,maxDmg=321,manaCost=0,castTime=0,spCoeff=0.429,manaPct=6,cd=40,level=55,id=51480},
@@ -208,7 +208,7 @@ SPELLCALC_SPELLS["PRIEST"] = {
     S{name="Mind Blast",rank=8,school=6,spellType="damage",minDmg=425,maxDmg=449,manaCost=310,castTime=1.5,spCoeff=0.429,cd=8,level=52,id=10946},
     S{name="Mind Blast",rank=9,school=6,spellType="damage",minDmg=503,maxDmg=531,manaCost=350,castTime=1.5,spCoeff=0.429,cd=8,level=58,id=10947},
 
-    -- PAIN SPIKE  (Koeffizient geschaetzt)
+    -- PAIN SPIKE  (coefficient estimated)
     S{name="Pain Spike",rank=1,school=6,spellType="damage",minDmg=66,maxDmg=85,manaCost=80,castTime=0,spCoeff=0.429,cd=30,level=30,id=45555},
     S{name="Pain Spike",rank=2,school=6,spellType="damage",minDmg=149,maxDmg=172,manaCost=140,castTime=0,spCoeff=0.429,cd=30,level=40,id=57701},
     S{name="Pain Spike",rank=3,school=6,spellType="damage",minDmg=209,maxDmg=240,manaCost=185,castTime=0,spCoeff=0.429,cd=30,level=50,id=57704},
@@ -422,7 +422,7 @@ SPELLCALC_SPELLS["WARLOCK"] = {
     S{name="Drain Soul",rank=4,school=6,spellType="ch_dmg",minDmg=762,maxDmg=762,manaCost=100,castTime=6,spCoeff=0.5,cd=0,level=52,id=11675},
     S{name="Drain Soul",rank=5,school=6,spellType="ch_dmg",minDmg=954,maxDmg=954,manaCost=135,castTime=6,spCoeff=0.5,cd=0,level=60,id=51687},
 
-    -- DARK HARVEST  (Koeffizient geschaetzt)
+    -- DARK HARVEST  (coefficient estimated)
     S{name="Dark Harvest",rank=1,school=6,spellType="ch_dmg",minDmg=704,maxDmg=704,manaCost=230,castTime=8,spCoeff=1,cd=30,level=40,id=52550},
     S{name="Dark Harvest",rank=2,school=6,spellType="ch_dmg",minDmg=904,maxDmg=904,manaCost=300,castTime=8,spCoeff=1,cd=30,level=50,id=52551},
     S{name="Dark Harvest",rank=3,school=6,spellType="ch_dmg",minDmg=1152,maxDmg=1152,manaCost=350,castTime=8,spCoeff=1,cd=30,level=60,id=52552},
@@ -463,7 +463,7 @@ SPELLCALC_SPELLS["DRUID"] = {
     S{name="Starfire",rank=6,school=7,spellType="damage",minDmg=445,maxDmg=525,manaCost=315,castTime=3.5,spCoeff=1,cd=0,level=58,id=9876},
     S{name="Starfire",rank=7,school=7,spellType="damage",minDmg=496,maxDmg=584,manaCost=340,castTime=3.5,spCoeff=1,cd=0,level=60,id=25298},
 
-    -- MOONFIRE  (Koeffizient geschaetzt)
+    -- MOONFIRE  (coefficient estimated)
     S{name="Moonfire",rank=1,school=7,spellType="dd+dot",minDmg=7,maxDmg=9,manaCost=25,castTime=0,spCoeff=0.06,dotTotal=12,dotDuration=9,dotCoeff=0.156,cd=0,level=4,id=8921},
     S{name="Moonfire",rank=2,school=7,spellType="dd+dot",minDmg=13,maxDmg=17,manaCost=50,castTime=0,spCoeff=0.094,dotTotal=48,dotDuration=18,dotCoeff=0.488,cd=0,level=10,id=8924},
     S{name="Moonfire",rank=3,school=7,spellType="dd+dot",minDmg=25,maxDmg=31,manaCost=75,castTime=0,spCoeff=0.128,dotTotal=78,dotDuration=18,dotCoeff=0.663,cd=0,level=16,id=8925},
@@ -475,7 +475,7 @@ SPELLCALC_SPELLS["DRUID"] = {
     S{name="Moonfire",rank=9,school=7,spellType="dd+dot",minDmg=157,maxDmg=185,manaCost=325,castTime=0,spCoeff=0.15,dotTotal=480,dotDuration=18,dotCoeff=0.78,cd=0,level=52,id=9834},
     S{name="Moonfire",rank=10,school=7,spellType="dd+dot",minDmg=189,maxDmg=221,manaCost=375,castTime=0,spCoeff=0.15,dotTotal=576,dotDuration=18,dotCoeff=0.78,cd=0,level=58,id=9835},
 
-    -- INSECT SWARM  (Koeffizient geschaetzt)
+    -- INSECT SWARM  (coefficient estimated)
     S{name="Insect Swarm",rank=1,school=4,spellType="dot",manaCost=45,castTime=0,dotTotal=99,dotDuration=18,dotCoeff=1,cd=0,level=20,id=5570},
     S{name="Insect Swarm",rank=2,school=4,spellType="dot",manaCost=85,castTime=0,dotTotal=207,dotDuration=18,dotCoeff=1,cd=0,level=30,id=24974},
     S{name="Insect Swarm",rank=3,school=4,spellType="dot",manaCost=100,castTime=0,dotTotal=261,dotDuration=18,dotCoeff=1,cd=0,level=40,id=24975},
@@ -553,7 +553,7 @@ SPELLCALC_SPELLS["SHAMAN"] = {
     S{name="Chain Lightning",rank=3,school=4,spellType="damage",minDmg=378,maxDmg=424,manaCost=490,castTime=2.5,spCoeff=0.714,cd=6,level=48,id=2860},
     S{name="Chain Lightning",rank=4,school=4,spellType="damage",minDmg=493,maxDmg=551,manaCost=605,castTime=2.5,spCoeff=0.714,cd=6,level=56,id=10605},
 
-    -- MOLTEN BLAST  (Koeffizient geschaetzt)
+    -- MOLTEN BLAST  (coefficient estimated)
     S{name="Molten Blast",rank=1,school=3,spellType="damage",minDmg=61,maxDmg=73,manaCost=65,castTime=2,spCoeff=0.571,cd=0,level=20,id=36916},
     S{name="Molten Blast",rank=2,school=3,spellType="damage",minDmg=96,maxDmg=120,manaCost=95,castTime=2,spCoeff=0.571,cd=0,level=28,id=36917},
     S{name="Molten Blast",rank=3,school=3,spellType="damage",minDmg=136,maxDmg=155,manaCost=120,castTime=2,spCoeff=0.571,cd=0,level=36,id=36918},
@@ -561,7 +561,7 @@ SPELLCALC_SPELLS["SHAMAN"] = {
     S{name="Molten Blast",rank=5,school=3,spellType="damage",minDmg=238,maxDmg=268,manaCost=175,castTime=2,spCoeff=0.571,cd=0,level=52,id=36920},
     S{name="Molten Blast",rank=6,school=3,spellType="damage",minDmg=290,maxDmg=331,manaCost=210,castTime=2,spCoeff=0.571,cd=0,level=60,id=36921},
 
-    -- EARTHQUAKE  (Koeffizient geschaetzt)
+    -- EARTHQUAKE  (coefficient estimated)
     S{name="Earthquake",rank=1,school=4,spellType="damage",minDmg=262,maxDmg=291,manaCost=225,castTime=2.5,spCoeff=0.357,cd=16,level=40,isAoE=true,id=48306},
     S{name="Earthquake",rank=2,school=4,spellType="damage",minDmg=395,maxDmg=446,manaCost=335,castTime=2.5,spCoeff=0.357,cd=16,level=50,isAoE=true,id=48307},
     S{name="Earthquake",rank=3,school=4,spellType="damage",minDmg=587,maxDmg=634,manaCost=440,castTime=2.5,spCoeff=0.357,cd=16,level=60,isAoE=true,id=48308},
@@ -575,7 +575,7 @@ SPELLCALC_SPELLS["SHAMAN"] = {
     S{name="Earth Shock",rank=6,school=4,spellType="damage",minDmg=359,maxDmg=381,manaCost=345,castTime=0,spCoeff=0.386,cd=6,level=48,id=10413},
     S{name="Earth Shock",rank=7,school=4,spellType="damage",minDmg=492,maxDmg=520,manaCost=450,castTime=0,spCoeff=0.386,cd=6,level=60,id=10414},
 
-    -- FLAME SHOCK  (Koeffizient geschaetzt)
+    -- FLAME SHOCK  (coefficient estimated)
     S{name="Flame Shock",rank=1,school=3,spellType="dd+dot",minDmg=21,maxDmg=21,manaCost=55,castTime=0,spCoeff=0.134,dotTotal=35,dotDuration=15,dotCoeff=0.406,cd=6,level=10,id=8050},
     S{name="Flame Shock",rank=2,school=3,spellType="dd+dot",minDmg=45,maxDmg=45,manaCost=95,castTime=0,spCoeff=0.198,dotTotal=60,dotDuration=15,dotCoeff=0.601,cd=6,level=18,id=8052},
     S{name="Flame Shock",rank=3,school=3,spellType="dd+dot",minDmg=86,maxDmg=86,manaCost=160,castTime=0,spCoeff=0.214,dotTotal=120,dotDuration=15,dotCoeff=0.65,cd=6,level=28,id=8053},
@@ -684,25 +684,25 @@ SPELLCALC_SPELLS["PALADIN"] = {
 
 SPELLCALC_TALENTS = {}
 
--- [patch] Talentwerte gegen die Client-Daten von OctoWoW geprueft
--- (Talent.dbc/Spell.dbc aus patch-4.mpq bzw. patch-O.mpq, 2026-10-02).
--- Die Talentbaeume weichen teils stark von Classic 1.12 ab. Welche Zauber
--- ein Talent trifft, folgt der Zauber-Maske des Talents im Client.
---   perRank   Bonus pro Rang (linear)
---   values    Bonus je Rang, wenn nicht linear
---   part      "direct" oder "dot": wirkt nur auf diesen Teil des Zaubers
---   key       eigener Name, wenn ein Talent mehrere Eintraege braucht
---   buff      Talent zaehlt nur mit aktivem Buff (Teil des Symbolnamens)
---   mod       Art des Talents, ohne mod = Schaden/Heilung in Prozent:
---             cast (Sek.), cd (Sek.), duration (Sek.), cost (Anteil),
---             crit (Anteil), critbonus (Anteil des Krit-Bonus)
---   affectType "damage"/"healing"/"both"; fehlt er, gilt er fuer beides
+-- [patch] Talent values checked against OctoWoW's client data
+-- (Talent.dbc/Spell.dbc from patch-4.mpq and patch-O.mpq, 2026-10-02).
+-- The talent trees partly differ a lot from Classic 1.12. Which spells a
+-- talent affects follows the talent's spell mask in the client.
+--   perRank   bonus per rank (linear)
+--   values    bonus per rank, if not linear
+--   part      "direct" or "dot": only affects that part of the spell
+--   key       own name, if a talent needs several entries
+--   buff      talent only counts with an active buff (part of the icon name)
+--   mod       kind of talent, without mod = damage/healing in percent:
+--             cast (sec), cd (sec), duration (sec), cost (fraction),
+--             crit (fraction), critbonus (fraction of the crit bonus)
+--   affectType "damage"/"healing"/"both"; if missing, it applies to both
 
 SPELLCALC_TALENTS["MAGE"] = {
     { name="Fire Power",         perRank=0.02, maxRank=5, affectType="damage", affectSchool={3} },
     { name="Piercing Ice",       perRank=0.02, maxRank=3, affectType="damage", affectSchool={5} },
     { name="Improved Cone of Cold", values={0.15, 0.25, 0.35}, maxRank=3, affectType="damage", affectSpells={"Cone of Cold"} },
-    -- Proc: 8/16/25% Chance auf +25% Schaden -> Erwartungswert, nur Arkan
+    -- Proc: 8/16/25% chance for +25% damage -> expected value, arcane only
     { name="Arcane Instability", values={0.02, 0.04, 0.0625}, maxRank=3, affectType="damage", affectSchool={7} },
 
     { name="Improved Frostbolt", mod="cast", perRank=-0.1, maxRank=5, affectSpells={"Frostbolt"} },
@@ -721,7 +721,7 @@ SPELLCALC_TALENTS["MAGE"] = {
 SPELLCALC_TALENTS["PRIEST"] = {
     { name="Darkness",           perRank=0.02, maxRank=5, affectType="damage", affectSchool={6} },
     { name="Shadowform",         perRank=0.15, maxRank=1, affectType="damage", affectSchool={6}, buff="Spell_Shadow_Shadowform" },
-    -- Schaden nur Smite, Holy Fire, Mind Blast (plus Holy Nova/Chastise laut Maske nicht)
+    -- damage only Smite, Holy Fire, Mind Blast (Holy Nova/Chastise not, per the mask)
     { name="Force of Will",      perRank=0.01, maxRank=5, affectType="damage", affectSpells={"Smite","Holy Fire","Mind Blast"} },
     { name="Force of Will", key="Force of Will (Shield)", perRank=0.04, maxRank=5, affectType="healing", affectSpells={"Power Word: Shield"} },
     { name="Force of Will", key="Force of Will (Crit)", mod="crit", perRank=0.01, maxRank=5, affectType="damage",

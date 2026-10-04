@@ -16,7 +16,7 @@ SpellCalc.spManual = nil
 SpellCalc.hpManual = nil
 SpellCalc.scrollOffset = 0
 SpellCalc.showAllRanks = true -- toggle to show/hide lower ranks
-SpellCalc.onlyLearned = false -- [patch] nur Zauber aus dem Zauberbuch zeigen
+SpellCalc.onlyLearned = false -- [patch] only show spells from the spellbook
 SpellCalc.knownCache = nil
 
 local NUM_VISIBLE_ROWS = 18
@@ -24,9 +24,9 @@ local ROW_HEIGHT = 20
 local FRAME_WIDTH = 740
 local FRAME_HEIGHT = 520
 
--- [patch] Spalte "Scaling" ergaenzt: wie viel Prozent der Zauberkraft pro
--- Wirkung ankommt. Steht direkt neben dem Durchschnittswert, damit man sieht,
--- welcher Rang von zusaetzlicher Zauberkraft ueberhaupt profitiert.
+-- [patch] added the "Scaling" column: what percentage of spell power arrives
+-- per cast. It sits right next to the average value, so you can see which
+-- rank benefits from additional spell power at all.
 local COL_WIDTHS = { 200, 55, 75, 55, 70, 65, 50, 45 }
 local COL_HEADERS = { "Spell", "School", "Avg Value", "Scaling", "/Mana", "/Sec", "Mana", "CD" }
 local COL_KEYS   = { "name", "school", "avg", "coeff", "mana", "dps", "cost", "cd" }
@@ -69,11 +69,11 @@ function SpellCalc:ScanTalents()
             local tName, _, _, _, rank = GetTalentInfo(tab, i)
             if tName and rank and rank > 0 then
                 for _, tDef in ipairs(talentDefs) do
-                    -- [patch] buff: Talent wirkt nur mit aktivem Buff/Form
-                    -- (z.B. Shadowform), erkannt am Symbol des Buffs
+                    -- [patch] buff: talent only applies with an active buff/form
+                    -- (e.g. Shadowform), detected by the buff's icon
                     if tName == tDef.name and (not tDef.buff or self:HasBuff(tDef.buff)) then
-                        -- [patch] "key" erlaubt mehrere Eintraege pro Talent
-                        -- (z.B. Force of Will: Schaden UND Schild)
+                        -- [patch] "key" allows several entries per talent
+                        -- (e.g. Force of Will: damage AND shield)
                         self.talentCache[tDef.key or tDef.name] = {
                             rank = rank,
                             perRank = tDef.perRank,
@@ -92,8 +92,8 @@ function SpellCalc:ScanTalents()
     end
 end
 
--- [patch] Sucht einen Spieler-Buff anhand eines Teils seines Symbolnamens.
--- 1.12 liefert bei UnitBuff nur das Symbol, keinen Namen.
+-- [patch] Finds a player buff by part of its icon name.
+-- In 1.12 UnitBuff only returns the icon, not the name.
 function SpellCalc:HasBuff(iconPart)
     local needle = string.lower(iconPart)
     for i = 1, 32 do
@@ -104,8 +104,8 @@ function SpellCalc:HasBuff(iconPart)
     return false
 end
 
--- [patch] Bonus eines Talents auf seinem aktuellen Rang. "values" fuer
--- Talente, die nicht linear steigen (z.B. Improved Cone of Cold 15/25/35%).
+-- [patch] Bonus of a talent at its current rank. "values" for talents that
+-- do not scale linearly (e.g. Improved Cone of Cold 15/25/35%).
 function SpellCalc:TalentBonus(tData)
     if tData.values then
         return tData.values[tData.rank] or tData.values[table.getn(tData.values)] or 0
@@ -113,10 +113,10 @@ function SpellCalc:TalentBonus(tData)
     return (tData.perRank or 0) * tData.rank
 end
 
--- [patch] part: "direct" oder "dot". Talente mit part wirken nur auf
--- diesen Teil (z.B. Genesis nur auf periodische Effekte), ohne part auf beide.
--- part == nil heisst "irgendein Teil" (fuer Tooltip/Anzeige).
--- Fehlt affectType, wirkt das Talent auf Schadens- und Heilzauber.
+-- [patch] part: "direct" or "dot". Talents with a part only affect that
+-- part (e.g. Genesis only periodic effects), without part they affect both.
+-- part == nil means "any part" (for tooltip/display).
+-- Without affectType the talent affects damage and healing spells.
 function SpellCalc:TalentApplies(tData, spellName, school, isDamage, part)
     local affType = isDamage and "damage" or "healing"
     if tData.affectType and tData.affectType ~= affType and tData.affectType ~= "both" then return false end
@@ -136,7 +136,7 @@ function SpellCalc:TalentApplies(tData, spellName, school, isDamage, part)
     return false
 end
 
--- Schadens-/Heilungsmultiplikator (nur Talente ohne "mod")
+-- damage/healing multiplier (only talents without "mod")
 function SpellCalc:GetTalentMultiplier(spellName, school, isDamage, part)
     local mult = 1.0
     for tName, tData in pairs(self.talentCache) do
@@ -147,13 +147,13 @@ function SpellCalc:GetTalentMultiplier(spellName, school, isDamage, part)
     return mult
 end
 
--- [patch] Summe aller Talente einer Art ("mod"):
---   cast       Zauberzeit in Sekunden (negativ = schneller)
---   cd         Cooldown in Sekunden
---   duration   Dauer von DoT/HoT in Sekunden (mehr Ticks)
---   cost       Manakosten als Anteil (-0.05 = 5% billiger)
---   crit       zusaetzliche Krit-Chance als Anteil (0.02 = 2%)
---   critbonus  zusaetzlicher Krit-Bonus als Anteil (1.0 = Krit x2 statt x1.5)
+-- [patch] sum of all talents of one kind ("mod"):
+--   cast       cast time in seconds (negative = faster)
+--   cd         cooldown in seconds
+--   duration   DoT/HoT duration in seconds (more ticks)
+--   cost       mana cost as a fraction (-0.05 = 5% cheaper)
+--   crit       additional crit chance as a fraction (0.02 = 2%)
+--   critbonus  additional crit bonus as a fraction (1.0 = crit x2 instead of x1.5)
 function SpellCalc:GetTalentMod(mod, spellName, school, isDamage)
     local total = 0
     for tName, tData in pairs(self.talentCache) do
@@ -168,22 +168,22 @@ end
 -- STAT READING
 -- ============================================================================
 
--- [patch] Vanilla 1.12 kennt GetSpellBonusDamage und GetSpellBonusHealing
--- nicht - die Werte stehen ausschliesslich in den Item-Tooltips. Deshalb kam
--- hier bisher immer 0 heraus. BetterCharacterStats wertet die Ausruestung
--- ohnehin schon aus, wir lesen die Werte von dort.
+-- [patch] Vanilla 1.12 does not know GetSpellBonusDamage and
+-- GetSpellBonusHealing - the values only exist in item tooltips. That is why
+-- this always returned 0. BetterCharacterStats already evaluates the gear,
+-- so we read the values from there.
 --
--- BCS trennt sauber:
---   damage_and_healing  zaehlt fuer Schaden UND Heilung
---   only_damage         nur Schaden
---   healing             nur Heilung
---   holy/fire/...       schulspezifischer Aufschlag obendrauf
+-- BCS separates cleanly:
+--   damage_and_healing  counts for damage AND healing
+--   only_damage         damage only
+--   healing             healing only
+--   holy/fire/...       school-specific bonus on top
 local BCS_SCHOOL = { [2] = "holy", [3] = "fire", [4] = "nature",
                      [5] = "frost", [6] = "shadow", [7] = "arcane" }
 
 function SpellCalc:BCSReady()
     if not BCS or not BCS.GetSpellPower or not BCS.GetHealingPower then return nil end
-    -- BCS scannt nur bei gesetzten Dirty-Flags neu, der Aufruf ist billig
+    -- BCS only rescans when dirty flags are set, so the call is cheap
     if BCS.RunScans then BCS:RunScans() end
     return true
 end
@@ -194,7 +194,7 @@ function SpellCalc:GetSchoolBonus(school)
     return BCS:GetSpellPower(key) or 0
 end
 
--- Zauberkraft, die auf jede Schule wirkt
+-- spell power that applies to every school
 function SpellCalc:GetGenericSpellPower()
     if not self:BCSReady() then return nil end
     local damageAndHealing, _, _, damageOnly = BCS:GetSpellPower()
@@ -209,7 +209,7 @@ function SpellCalc:GetSpellPower(school)
         return generic + self:GetSchoolBonus(school)
     end
 
-    -- Clients, die die TBC-API doch mitbringen
+    -- clients that do ship the TBC API
     if GetSpellBonusDamage then
         local best = 0
         if school then
@@ -229,7 +229,7 @@ function SpellCalc:GetHealingPower()
     if self.hpManual then return self.hpManual end
 
     if self:BCSReady() then
-        -- damage_and_healing wirkt auch auf Heilung, only_damage nicht
+        -- damage_and_healing also applies to healing, only_damage does not
         local damageAndHealing = BCS:GetSpellPower()
         local healOnly = BCS:GetHealingPower()
         return (damageAndHealing or 0) + (healOnly or 0)
@@ -241,9 +241,9 @@ function SpellCalc:GetHealingPower()
     return 0
 end
 
--- [patch] Allgemeine Zauber-Krit-Chance in Prozent (Grundwert, Intelligenz,
--- Ausruestung, Buffs) von BetterCharacterStats. Zauberbezogene Talente
--- rechnet SpellCalc selbst dazu.
+-- [patch] General spell crit chance in percent (base, intellect, gear,
+-- buffs) from BetterCharacterStats. Spell-specific talents
+-- are added by SpellCalc itself.
 function SpellCalc:GetSpellCrit()
     if self.critManual then return self.critManual end
     if self:BCSReady() and BCS.GetSpellCritChance then
@@ -252,8 +252,8 @@ function SpellCalc:GetSpellCrit()
     return 0
 end
 
--- [patch] Grundmana = Maximalmana ohne den Anteil aus Intelligenz
--- (die ersten 20 Int geben je 1 Mana, jeder weitere Punkt 15).
+-- [patch] base mana = max mana without the part from intellect
+-- (the first 20 int give 1 mana each, every further point 15).
 function SpellCalc:GetBaseMana()
     local maxMana = UnitManaMax("player") or 0
     local _, int = UnitStat("player", 4)
@@ -284,7 +284,7 @@ function SpellCalc:CalcSpell(spellData)
     local name, school, isDamage = spellData.name, spellData.school, not isHealType
     local isChannel = (sType == "ch_dmg" or sType == "ch_heal")
 
-    -- [patch] Talente auf Zauberzeit, Cooldown, Dauer und Kosten
+    -- [patch] talents affecting cast time, cooldown, duration and cost
     result.castTime = spellData.castTime or 0
     if not isChannel then
         result.castTime = math.max(0, result.castTime + self:GetTalentMod("cast", name, school, isDamage))
@@ -292,14 +292,14 @@ function SpellCalc:CalcSpell(spellData)
     result.cd = math.max(0, (spellData.cd or 0) + self:GetTalentMod("cd", name, school, isDamage))
 
     local cost = spellData.manaCost or 0
-    -- [patch] Manche Zauber kosten Prozent des Grundmanas (z.B. Chastise)
+    -- [patch] some spells cost a percentage of base mana (e.g. Chastise)
     if cost == 0 and spellData.manaPct then
         cost = self:GetBaseMana() * spellData.manaPct / 100
     end
     local costMod = self:GetTalentMod("cost", name, school, isDamage)
     result.manaCost = math.max(0, math.floor(cost * (1 + costMod) + 0.5))
 
-    -- Laengere DoTs/HoTs: mehr Ticks, also mehr Grundwert und mehr Skalierung
+    -- longer DoTs/HoTs: more ticks, so more base value and more scaling
     local dotDuration = spellData.dotDuration
     local dotTotalBase = spellData.dotTotal or 0
     local dotCoeffVal = spellData.dotCoeff or 0
@@ -314,8 +314,8 @@ function SpellCalc:CalcSpell(spellData)
     end
 
     local sp = isHealType and self:GetHealingPower() or self:GetSpellPower(school)
-    -- [patch] Direkt- und periodischer Teil getrennt, weil manche Talente
-    -- nur einen davon verstaerken. Kanalisierte Zauber wirken periodisch.
+    -- [patch] direct and periodic parts kept separate, because some talents
+    -- only boost one of them. Channelled spells count as periodic.
     local directMult = self:GetTalentMultiplier(name, school, isDamage, "direct")
     local dotMult = self:GetTalentMultiplier(name, school, isDamage, "dot")
     local talentMult = directMult
@@ -323,9 +323,9 @@ function SpellCalc:CalcSpell(spellData)
         talentMult = dotMult
     end
 
-    -- [patch] Krit: nur der direkte Teil kann kritisch treffen, DoT/HoT-Ticks
-    -- nicht. Kanalisierte Zauber nur, wenn sie Einzeltreffer ausloesen
-    -- (canCrit, z.B. Arcane Missiles). Absorbs (noCrit) nie.
+    -- [patch] crit: only the direct part can crit, DoT/HoT ticks cannot.
+    -- Channelled spells only if they deal individual hits
+    -- (canCrit, e.g. Arcane Missiles). Absorbs (noCrit) never.
     local canCrit = (not spellData.noCrit) and (spellData.canCrit or not (sType == "dot" or sType == "hot" or isChannel))
     local critMult = 1
     if canCrit then
@@ -377,11 +377,11 @@ function SpellCalc:CalcSpell(spellData)
         result.directPart = Round(directTotal, 1)
         result.dotPart = Round(dotTotal, 1)
         result.perMana = Round(grandTotal / math.max(result.manaCost, 1), 2)
-        -- [patch] /Sec = Dauer-DPS, wenn man nur diesen Zauber wirkt:
-        -- alle "cycle" Sekunden ein Direkttreffer; der DoT wird dabei
-        -- erneuert, bevor er auslaeuft, bringt also pro Sekunde hoechstens
-        -- DoT/Dauer. Vorher stand hier Gesamt / (Zauberzeit + DoT-Dauer),
-        -- was z.B. Pyroblast auf 18 s und Moonfire auf 19,5 s verteilt hat.
+        -- [patch] /Sec = sustained DPS when casting only this spell:
+        -- a direct hit every "cycle" seconds; the DoT is refreshed before
+        -- it expires, so it adds at most DoT/duration per second. Before,
+        -- this was total / (cast time + DoT duration), which spread e.g.
+        -- Pyroblast over 18 s and Moonfire over 19.5 s.
         local cycle = effectiveTime
         local dur = dotDuration or 0
         local dotPerSec = 0
@@ -389,8 +389,8 @@ function SpellCalc:CalcSpell(spellData)
             dotPerSec = dotTotal / math.max(dur, cycle)
         end
         result.perSecond = Round(directTotal / cycle + dotPerSec, 1)
-        -- Fuer den Tooltip: Wert pro Zauberzeit (wenn der DoT neben anderen
-        -- Zaubern voll auslaeuft) und DoT-Anteil pro Sekunde
+        -- for the tooltip: value per cast time (when the DoT runs out fully
+        -- alongside other spells) and the DoT part per second
         result.perCastTime = Round(grandTotal / cycle, 1)
         result.dotPerSecond = Round(dotPerSec, 1)
         result.dotDuration = dotDuration
@@ -407,9 +407,9 @@ function SpellCalc:CalcSpell(spellData)
         result.perSecond = Round(total / chanTime, 1)
     end
 
-    -- [patch] Skalierung: Anteil der Zauberkraft, der pro Wirkung ankommt.
-    -- Bei Kombinationen aus Direktschaden und DoT zaehlt beides zusammen,
-    -- weil beide Teile aus derselben Wirkung stammen.
+    -- [patch] scaling: share of spell power that arrives per cast.
+    -- For direct damage plus DoT combinations both count together,
+    -- because both parts come from the same cast.
     local directCoeff = isHealType and (spellData.hpCoeff or 0) or (spellData.spCoeff or 0)
     if sType == "dot" or sType == "hot" then
         result.coeffDirect, result.coeffDot = 0, dotCoeffVal
@@ -437,10 +437,10 @@ function SpellCalc:CalcAllSpells()
     return results
 end
 
--- [patch] Liest das Zauberbuch aus.
--- Liefert eine Tabelle mit zwei Arten von Schluesseln:
---   ["Renew|2"] = true   -> genau dieser Rang ist gelernt
---   ["Renew"]   = 2      -> hoechster gelernter Rang
+-- [patch] Reads the spellbook.
+-- Returns a table with two kinds of keys:
+--   ["Renew|2"] = true   -> exactly this rank is learned
+--   ["Renew"]   = 2      -> highest learned rank
 function SpellCalc:GetKnownSpells()
     if self.knownCache then return self.knownCache end
     local known = {}
@@ -468,7 +468,7 @@ function SpellCalc:GetFilteredSorted()
     if not self.cachedData then return {} end
 
     local filtered = {}
-    -- [patch] nur einmal pro Durchlauf holen
+    -- [patch] fetch only once per pass
     local known = nil
     if self.onlyLearned then known = self:GetKnownSpells() end
     for _, r in ipairs(self.cachedData) do
@@ -477,8 +477,8 @@ function SpellCalc:GetFilteredSorted()
         elseif self.currentFilter == "damage" and not r.isHeal then show = true
         elseif self.currentFilter == "healing" and r.isHeal then show = true
         end
-        -- [patch] Rang muss exakt im Zauberbuch stehen
-        -- "Holy Shock (Heal)" usw. steht im Zauberbuch ohne Zusatz
+        -- [patch] the rank must be in the spellbook exactly
+        -- "Holy Shock (Heal)" etc. appear in the spellbook without the suffix
         local bookName = string.gsub(r.name, " %(Heal%)$", "")
         if show and known and not known[bookName .. "|" .. r.rank] then
             show = false
@@ -576,8 +576,8 @@ function SpellCalc:CreateUI()
         btn:SetHeight(20)
         btn:SetPoint("TOPLEFT", 10 + (i-1) * 74, filterY)
         btn:SetText(fd.text)
-        -- [patch] Filter am Button ablegen und ueber "this" lesen. Der
-        -- Upvalue "fd" war zur Klickzeit nil -> "attempt to index a nil value".
+        -- [patch] store the filter on the button and read it via "this". The
+        -- upvalue "fd" was nil at click time -> "attempt to index a nil value".
         btn.scFilter = fd.filter
         btn:SetScript("OnClick", function()
             local key = this and this.scFilter
@@ -590,8 +590,8 @@ function SpellCalc:CreateUI()
     end
     self.filterButtons = filters
 
-    -- [patch] Haken "Learned only": blendet alles aus, was nicht im
-    -- Zauberbuch steht. Wirkt zusaetzlich zu All/Damage/Healing.
+    -- [patch] "Learned only" checkbox: hides everything that is not in the
+    -- spellbook. Applies on top of All/Damage/Healing.
     local cb = CreateFrame("CheckButton", "SpellCalcOnlyLearned", f, "UICheckButtonTemplate")
     cb:SetWidth(20)
     cb:SetHeight(20)
@@ -626,7 +626,7 @@ function SpellCalc:CreateUI()
         hText:SetWidth(COL_WIDTHS[i])
         hBtn.text = hText
         local colKey = COL_KEYS[i]
-        hBtn.scKey = colKey          -- [patch] siehe Filterknoepfe
+        hBtn.scKey = colKey          -- [patch] see filter buttons
         hBtn:SetScript("OnClick", function()
             local key = this and this.scKey
             if not key or key == "school" then return end
@@ -686,7 +686,7 @@ function SpellCalc:CreateUI()
         end
 
         row:EnableMouse(true)
-        -- [patch] ueber "this" statt ueber den Schleifen-Upvalue
+        -- [patch] via "this" instead of the loop upvalue
         row:SetScript("OnEnter", function()
             if not this or not this.hl then return end
             this.hl:SetTexture(1, 1, 1, 0.15)
@@ -754,9 +754,9 @@ function SpellCalc:UpdateList()
     -- Info
     local _, localizedClass = UnitClass("player")
 
-    -- [patch] Allgemeine Zauberkraft und den hoechsten schulspezifischen
-    -- Aufschlag getrennt ausweisen. Vorher stand hier das Maximum ueber alle
-    -- Schulen, was fuer jeden Zauber ausser einem zu hoch war.
+    -- [patch] show general spell power and the highest school-specific bonus
+    -- separately. Before, this showed the maximum over all schools, which
+    -- was too high for every spell but one.
     local genericSP = self:GetSpellPower(nil)
     local bestExtra, bestName = 0, nil
     local i
@@ -851,7 +851,7 @@ function SpellCalc:CountActiveTalents()
     return count
 end
 
--- [patch] Talentwert lesbar je nach Art
+-- [patch] readable talent value depending on its kind
 function SpellCalc:TalentLabel(tName, tData)
     local v = self:TalentBonus(tData)
     local m = tData.mod
@@ -875,7 +875,7 @@ function SpellCalc:UpdateFooter()
     end
     table.sort(parts)
     if table.getn(parts) > 0 then
-        self.footerText:SetText("|cFFAAAAFFTalents: " .. table.concat(parts, ", ") .. "  (Details im Tooltip)|r")
+        self.footerText:SetText("|cFFAAAAFFTalents: " .. table.concat(parts, ", ") .. "  (details in tooltip)|r")
     else
         self.footerText:SetText("|cFF888888No relevant talents detected|r")
     end
@@ -910,7 +910,7 @@ function SpellCalc:ShowTooltip(row)
         GameTooltip:AddDoubleLine("Duration:", d.dotDuration .. "s", 0.8, 0.8, 0.8, 1, 1, 1)
     end
 
-    -- [patch] Skalierung aufgeschluesselt
+    -- [patch] scaling broken down
     if d.coeff then
         local powerLabel = d.isHeal and "healing power" or "spell power"
         GameTooltip:AddLine(" ")
@@ -944,7 +944,7 @@ function SpellCalc:ShowTooltip(row)
     GameTooltip:AddDoubleLine(effLabel .. " (per mana):", string.format("%.2f", d.perMana or 0), 0.5, 0.8, 1, 1, 1, 1)
     local dpsLabel = d.isHeal and "HPS" or "DPS"
     GameTooltip:AddDoubleLine(dpsLabel .. " (per second):", string.format("%.1f", d.perSecond or 0), 1, 0.87, 0.3, 1, 1, 1)
-    -- [patch] Direkt + DoT/HoT aufgeschluesselt
+    -- [patch] direct + DoT/HoT broken down
     if d.perCastTime then
         local dotLabel = d.isHeal and "HoT" or "DoT"
         GameTooltip:AddLine("  = spamming only this spell (" .. dotLabel .. " refreshed)", 0.5, 0.5, 0.5)
@@ -955,7 +955,7 @@ function SpellCalc:ShowTooltip(row)
         GameTooltip:AddLine("  = full " .. dotLabel .. " ticks while you cast other spells", 0.5, 0.5, 0.5)
     end
 
-    -- [patch] Krit
+    -- [patch] Crit
     if d.canCrit and d.critChance then
         GameTooltip:AddDoubleLine("Crit chance:", string.format("%.1f%% (x%.2f)", d.critChance * 100, d.critDamage or 1.5),
             0.8, 0.8, 0.8, 1, 1, 1)
@@ -1038,10 +1038,10 @@ local initFrame = CreateFrame("Frame")
 initFrame:RegisterEvent("PLAYER_LOGIN")
 initFrame:RegisterEvent("CHARACTER_POINTS_CHANGED")
 initFrame:RegisterEvent("PLAYER_AURAS_CHANGED")
-initFrame:RegisterEvent("SPELLS_CHANGED")  -- [patch] Zauberbuch hat sich geaendert
+initFrame:RegisterEvent("SPELLS_CHANGED")  -- [patch] spellbook changed
 initFrame:SetScript("OnEvent", function()
     if event == "PLAYER_LOGIN" then
-        -- [patch] gespeicherte Einstellung uebernehmen
+        -- [patch] apply the saved setting
         if type(SpellCalcSettings) ~= "table" then SpellCalcSettings = {} end
         if SpellCalcSettings.onlyLearned == nil then SpellCalcSettings.onlyLearned = false end
         SpellCalc.onlyLearned = SpellCalcSettings.onlyLearned
@@ -1053,7 +1053,7 @@ initFrame:SetScript("OnEvent", function()
                 SpellCalc:Toggle()
                 return
             end
-            -- [patch] string.match ist Lua 5.1; 1.12 laeuft auf 5.0
+            -- [patch] string.match is Lua 5.1; 1.12 runs on 5.0
             local _, _, cmd, val = string.find(msg, "^(%S+)%s*(%S*)$")
             if not cmd then cmd = msg end
             cmd = string.lower(cmd)
@@ -1075,7 +1075,7 @@ initFrame:SetScript("OnEvent", function()
             elseif cmd == "hp" then
                 SpellCalc:SetManualHP(tonumber(val))
             elseif cmd == "crit" then
-                -- [patch] Krit-Chance von Hand setzen (Prozent), 0 = automatisch
+                -- [patch] set crit chance manually (percent), 0 = automatic
                 local v = tonumber(val)
                 SpellCalc.critManual = (v and v > 0) and v or nil
                 SpellCalc.cachedData = nil
@@ -1111,7 +1111,7 @@ initFrame:SetScript("OnEvent", function()
             DEFAULT_CHAT_FRAME:AddMessage("|cFF00FF00SpellCalc|r loaded. No spell data available for your class.")
         end
     elseif event == "SPELLS_CHANGED" then
-        -- [patch] neuer Zauber gelernt -> Zauberbuch neu einlesen
+        -- [patch] new spell learned -> re-read the spellbook
         SpellCalc.knownCache = nil
         if SpellCalc.frame and SpellCalc.frame:IsShown() then SpellCalc:UpdateList() end
     elseif event == "CHARACTER_POINTS_CHANGED" or event == "PLAYER_AURAS_CHANGED" then
